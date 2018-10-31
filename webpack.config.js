@@ -47,6 +47,10 @@ const serverConfig = {
     path: path.resolve(__dirname, 'dist')
   },
   module: mod,
+  externals: {
+    qrcode: 'QRCode',
+    fetch: '@brillout/fetch'
+  }
 };
 
 module.exports = [ clientConfig, serverConfig ];
