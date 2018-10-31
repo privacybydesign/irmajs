@@ -2,7 +2,7 @@
   "name": "irmajs",
   "version": "0.0.1",
   "description": "",
-  "main": "index.js",
+  "main": "bundle.node.js",
   "scripts": {
     "develop": "webpack --mode development --watch",
     "build": "webpack --mode production"
@@ -11,7 +11,9 @@
   "author": "Sietse Ringers",
   "license": "MIT",
   "devDependencies": {
-    "babel-core": "^6.26.3",
+    "@babel/core": "^7.1.2",
+    "@babel/preset-env": "^7.1.0",
+    "@brillout/fetch": "^0.1.2",
     "babel-eslint": "^10.0.1",
     "babel-loader": "^8.0.4",
     "css-loader": "^1.0.0",

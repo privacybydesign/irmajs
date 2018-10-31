@@ -1,6 +1,10 @@
-var QRCode = require('qrcode');
+import QRCode from 'qrcode';
+import fetch from '@brillout/fetch';
 
-const fetch = window.fetch;
+import './irma.scss';
+import './irma.png';
+import popupHtml from './popup.html';
+import translations from './translations';
 
 export const SessionStatus = {
   Initialized: 'INITIALIZED', // The session has been started and is waiting for the client
@@ -11,40 +15,59 @@ export const SessionStatus = {
 };
 
 const optionsDefaults = {
-  method: 'canvas',
+  method: 'popup',
   element: 'irmaqr',
+  language: 'en',
 };
 
-function log(...msg) {
-  console.log(msg); // eslint-disable-line no-console
-}
+const document = window ? window.document : undefined;
 
 export function handleSession(server, qr, options = {}) {
   const token = qr.u;
   return renderQr(server, qr, options)
-    .then(() => fetch(`${server}/session/${token}/result`))
+    .then(() => {
+      if (options.method === 'popup')
+        document.getElementById('irma-modal').classList.remove('irma-show');
+      return fetch(`${server}/session/${token}/result`);
+    })
     .then((res) => res.json());
 }
 
 export function renderQr(server, qr, options = {}) {
   const opts = Object.assign({}, optionsDefaults, options);
-  const state = {
+  let state = {
     qr,
     server,
     token: qr.u,
-    canvas: document.getElementById(opts.element),
     options: opts,
   };
+  if (options.method === 'popup')
+    ensurePopupInitialized(); // TODO: Moving this down breaks the QR?!
+  if (document)
+    state.canvas = document.getElementById(opts.element);
 
-  return Promise.resolve(state)
-    .then((state) => {
-      state.pollUrl = `${state.server}/session/${state.qr.u}/status`;
+  return Promise.resolve()
+    .then(() => {
+      state.pollUrl = `${state.server}/session/${state.token}/status`;
       state.qr.u = `${state.server}/irma/${state.token}`;
       log(state.qr);
-      QRCode.toCanvas(state.canvas, JSON.stringify(state.qr), (error) => { if (error) throw error; });
-      return Promise.all([state, waitConnected(state.pollUrl)]);
+      if (options.method === 'popup') {
+        translatePopup(qr.irmaqr, state.options.language);
+        document.getElementById('irma-modal').classList.add('irma-show');
+        // TODO remove earlier listeners
+        document.getElementById('irma-cancel-button').addEventListener('click', () => {
+          // TODO create this in irmaserver + backend
+          fetch(`${state.server}/session/${state.token}`, {method: 'DELETE'});
+        });
+      }
+      QRCode.toCanvas(state.canvas,
+        JSON.stringify(state.qr),
+        {width: '230', margin: '1'},
+        (error) => { if (error) throw error; }
+      );
+      return waitConnected(state.pollUrl);
     })
-    .then(([state, status]) => {
+    .then((status) => {
       log('2nd', state.pollUrl, status);
       if (status !== SessionStatus.Connected)
         return Promise.reject(status);
@@ -61,11 +84,11 @@ export function startSession(server, request) {
   }).then((res) => res.json());
 }
 
-function waitConnected(url) {
+export function waitConnected(url) {
   return pollStatus(url, SessionStatus.Initialized);
 }
 
-function waitDone(url) {
+export function waitDone(url) {
   return pollStatus(url, SessionStatus.Connected);
 }
 
@@ -79,4 +102,65 @@ function pollStatus(url, status = SessionStatus.Initialized) {
     };
     poller(status, resolve);
   });
+}
+
+function ensurePopupInitialized() {
+  if (!document || document.getElementById('irma-modal'))
+    return;
+
+  const popup = document.createElement('div');
+  popup.id = 'irma-modal';
+  popup.innerHTML = popupHtml;
+  document.body.appendChild(popup);
+
+  const overlay = document.createElement('div');
+  overlay.classList.add('irma-overlay');
+  document.body.appendChild(overlay);
+
+  // If we add these elements and then immediately add a css class to trigger our css animations,
+  // adding the elements and the css classes get bundled up and executed simultaneously,
+  // preventing the css animation from being shown. Accessing offsetHeight forces a reflow in between.
+  // https://stackoverflow.com/questions/24148403/trigger-css-transition-on-appended-element
+  // https://stackoverflow.com/questions/21664940/force-browser-to-trigger-reflow-while-changing-css
+  void(popup.offsetHeight); // void prevents Javascript optimizers from throwing away this line
+}
+
+function log(...msg) {
+  console.log(msg); // eslint-disable-line no-console
+}
+
+const sessionTypeMap = {
+  disclosing: 'Verify',
+  issuing: 'Issue',
+  signing: 'Sign'
+};
+
+function translatePopup(type, lang) {
+  translatePopupElement('irma-cancel-button', 'Common.Cancel', lang);
+  translatePopupElement('irma-title', sessionTypeMap[type] + '.Title', lang);
+  translatePopupElement('irma-text', sessionTypeMap[type] + '.Body', lang);
+}
+
+function translatePopupElement(el, id, lang) {
+  document.getElementById(el).innerText = getTranslatedString(id, lang);
+}
+
+function getTranslatedString(id, lang) {
+  var parts = id.split('.');
+  var res = translations[lang];
+  for (var part in parts) {
+      if (res === undefined) break;
+      res = res[parts[part]];
+  }
+
+  if (res === undefined) {
+      res = translations[optionsDefaults.language];
+      for (part in parts) {
+          if (res === undefined) break;
+          res = res[parts[part]];
+      }
+  }
+
+  if (res === undefined) return '';
+  else return res;
 }

@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>IRMA attribute verification example</title>
+    <script src="../dist/bundle.js" defer></script>
+    <script type="text/javascript">
+      const server = 'http://localhost:48680';
+      const request = {
+        'type': 'disclosing',
+        'content': [{
+          'label': 'Over 21',
+          'attributes': [ 'irma-demo.MijnOverheid.root.BSN' ]
+        }]
+      };
+
+      window.onload = function() {
+        document.getElementById('test').addEventListener('click', () => {
+          IRMA.startSession(server, request)
+            .then((qr) => {
+              return IRMA.handleSession(server, qr, {method: 'popup', element: 'modal-irmaqr', language: 'nl'});
+            })
+            .then((result) => console.log('Done', result))
+            .catch((err) => console.log(err));
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <button id="test">Test</button>
+  </body>
+</html>
