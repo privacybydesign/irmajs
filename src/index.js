@@ -24,7 +24,7 @@ const document = window ? window.document : undefined;
 
 export function handleSession(server, qr, options = {}) {
   const token = qr.u;
-  return renderQr(server, qr, options)
+  return renderQr(server + '/irma', qr, options)
     .then(() => {
       if (options.method === 'popup')
         closePopup();
@@ -48,15 +48,15 @@ export function renderQr(server, qr, options = {}) {
 
   return Promise.resolve()
     .then(() => {
-      state.pollUrl = `${state.server}/irma/${state.token}/status`;
-      state.qr.u = `${state.server}/irma/${state.token}`;
+      state.pollUrl = `${state.server}/${state.token}/status`;
+      state.qr.u = `${state.server}/${state.token}`;
       log(state.qr);
       if (options.method === 'popup') {
         translatePopup(qr.irmaqr, state.options.language);
         document.getElementById('irma-modal').classList.add('irma-show');
         // TODO remove earlier listeners
         document.getElementById('irma-cancel-button').addEventListener('click', () => {
-          fetch(`${state.server}/irma/${state.token}`, {method: 'DELETE'});
+          fetch(`${state.server}/${state.token}`, {method: 'DELETE'});
         });
       }
       QRCode.toCanvas(state.canvas,
