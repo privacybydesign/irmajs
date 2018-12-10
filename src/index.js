@@ -3,6 +3,7 @@ import fetch from '@brillout/fetch';
 
 import './irma.scss';
 import './irma.png';
+import phonePng from './phone.png';
 import popupHtml from './popup.html';
 import translations from './translations';
 
@@ -18,6 +19,7 @@ const optionsDefaults = {
   method: 'popup',
   element: 'irmaqr',
   language: 'en',
+  showConnectedIcon: true,
 };
 
 const document = window ? window.document : undefined;
@@ -56,7 +58,7 @@ export function renderQr(server, qr, options = {}) {
     token: qr.u,
     options: opts,
   };
-  if (options.method === 'popup')
+  if (state.options.method === 'popup')
     ensurePopupInitialized(); // TODO: Moving this down breaks the QR?!
   if (document)
     state.canvas = document.getElementById(opts.element);
@@ -66,7 +68,7 @@ export function renderQr(server, qr, options = {}) {
       state.pollUrl = `${state.server}/${state.token}/status`;
       state.qr.u = `${state.server}/${state.token}`;
       log(state.qr);
-      if (options.method === 'popup') {
+      if (state.options.method === 'popup') {
         translatePopup(qr.irmaqr, state.options.language);
         document.getElementById('irma-modal').classList.add('irma-show');
         // TODO remove earlier listeners
@@ -84,11 +86,17 @@ export function renderQr(server, qr, options = {}) {
     .then((status) => {
       log('2nd', state.pollUrl, status);
       if (status !== SessionStatus.Connected) {
-        if (options.method === 'popup')
+        if (state.options.method === 'popup')
           closePopup();
         return Promise.reject(status);
       }
-      state.canvas.getContext('2d').clearRect(0, 0, state.canvas.width, state.canvas.height);
+      const ctx = state.canvas.getContext('2d');
+      ctx.clearRect(0, 0, state.canvas.width, state.canvas.height);
+      if (state.options.showConnectedIcon) {
+        const img = new Image();
+        img.onload = () => ctx.drawImage(img, 15, 15, 200, 200);
+        img.src = phonePng;
+      }
       return waitDone(state.pollUrl);
     });
 }
