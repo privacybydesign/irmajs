@@ -22,6 +22,14 @@ const optionsDefaults = {
 
 const document = window ? window.document : undefined;
 
+/**
+ * Handle an IRMA session at an irmaserver, returning the session result
+ * when done. This function assumes the session has already been created
+ * (e.g. using startSession()).
+ * @param {string} server URL to irmaserver
+ * @param {Object} qr
+ * @param {Object} options
+ */
 export function handleSession(server, qr, options = {}) {
   const token = qr.u;
   return renderQr(server + '/irma', qr, options)
@@ -33,6 +41,13 @@ export function handleSession(server, qr, options = {}) {
     .then((res) => res.json());
 }
 
+/**
+ * Render a session QR, returning when the session is complete.
+ * Compatible with both irmaserver and library.
+ * @param {string} server URL to server to which the IRMA app will connect (include '/irma' in case of irmaserver)
+ * @param {Object} qr
+ * @param {Object} options
+ */
 export function renderQr(server, qr, options = {}) {
   const opts = Object.assign({}, optionsDefaults, options);
   let state = {
@@ -78,6 +93,11 @@ export function renderQr(server, qr, options = {}) {
     });
 }
 
+/**
+ * Start an IRMA session at an irmaserver.
+ * @param {string} server URL to irmaserver at which to start the session
+ * @param {Object} request Session request
+ */
 export function startSession(server, request) {
   return fetch(`${server}/session`, {
     method: 'POST',
@@ -86,10 +106,19 @@ export function startSession(server, request) {
   }).then((res) => res.json());
 }
 
+/**
+ * Poll the status URL of an IRMA server library until it indicates that
+ * the IRMA app has connected to it (or that the session is cancelled).
+ * @param {string} url
+ */
 export function waitConnected(url) {
   return pollStatus(url, SessionStatus.Initialized);
 }
 
+/**
+ * Poll the status URL of an IRMA server library until it indicates that the session is done.
+ * @param {string} url
+ */
 export function waitDone(url) {
   return pollStatus(url, SessionStatus.Connected);
 }
