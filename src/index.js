@@ -27,7 +27,7 @@ export function handleSession(server, qr, options = {}) {
   return renderQr(server, qr, options)
     .then(() => {
       if (options.method === 'popup')
-        document.getElementById('irma-modal').classList.remove('irma-show');
+        closePopup();
       return fetch(`${server}/session/${token}/result`);
     })
     .then((res) => res.json());
@@ -56,7 +56,6 @@ export function renderQr(server, qr, options = {}) {
         document.getElementById('irma-modal').classList.add('irma-show');
         // TODO remove earlier listeners
         document.getElementById('irma-cancel-button').addEventListener('click', () => {
-          // TODO create this in irmaserver + backend
           fetch(`${state.server}/session/${state.token}`, {method: 'DELETE'});
         });
       }
@@ -69,8 +68,11 @@ export function renderQr(server, qr, options = {}) {
     })
     .then((status) => {
       log('2nd', state.pollUrl, status);
-      if (status !== SessionStatus.Connected)
+      if (status !== SessionStatus.Connected) {
+        if (options.method === 'popup')
+          closePopup();
         return Promise.reject(status);
+      }
       state.canvas.getContext('2d').clearRect(0, 0, state.canvas.width, state.canvas.height);
       return waitDone(state.pollUrl);
     });
@@ -102,6 +104,12 @@ function pollStatus(url, status = SessionStatus.Initialized) {
     };
     poller(status, resolve);
   });
+}
+
+function closePopup() {
+  if (!document || !document.getElementById('irma-modal'))
+    return;
+  document.getElementById('irma-modal').classList.remove('irma-show');
 }
 
 function ensurePopupInitialized() {
