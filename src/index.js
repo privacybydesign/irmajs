@@ -86,6 +86,8 @@ export function renderQr(server, qr, options = {}) {
           closePopup();
         return Promise.reject(status);
       }
+      if (state.options.method === 'popup')
+        translatePopupElement('irma-text', 'Messages.FollowInstructions', state.options.language);
       clearQr(state.canvas, state.options.showConnectedIcon);
       return waitDone(state.pollUrl);
     });
