@@ -76,11 +76,7 @@ export function renderQr(server, qr, options = {}) {
           fetch(`${state.server}/${state.token}`, {method: 'DELETE'});
         });
       }
-      QRCode.toCanvas(state.canvas,
-        JSON.stringify(state.qr),
-        {width: '230', margin: '1'},
-        (error) => { if (error) throw error; }
-      );
+      drawQr(state.canvas, state.qr);
       return waitConnected(state.pollUrl);
     })
     .then((status) => {
@@ -90,13 +86,7 @@ export function renderQr(server, qr, options = {}) {
           closePopup();
         return Promise.reject(status);
       }
-      const ctx = state.canvas.getContext('2d');
-      ctx.clearRect(0, 0, state.canvas.width, state.canvas.height);
-      if (state.options.showConnectedIcon) {
-        const img = new Image();
-        img.onload = () => ctx.drawImage(img, 15, 15, 200, 200);
-        img.src = phonePng;
-      }
+      clearQr(state.canvas, state.options.showConnectedIcon);
       return waitDone(state.pollUrl);
     });
 }
@@ -141,6 +131,24 @@ function pollStatus(url, status = SessionStatus.Initialized) {
     };
     poller(status, resolve);
   });
+}
+
+function drawQr(canvas, qr) {
+  QRCode.toCanvas(canvas,
+    JSON.stringify(qr),
+    {width: '230', margin: '1'},
+    (error) => { if (error) throw error; }
+  );
+}
+
+function clearQr(canvas, showConnectedIcon) {
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (showConnectedIcon) {
+    const img = new Image();
+    img.onload = () => ctx.drawImage(img, 15, 15, 200, 200);
+    img.src = phonePng;
+  }
 }
 
 function closePopup() {
