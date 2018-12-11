@@ -68,14 +68,8 @@ export function renderQr(server, qr, options = {}) {
       state.pollUrl = `${state.server}/${state.token}/status`;
       state.qr.u = `${state.server}/${state.token}`;
       log(state.qr);
-      if (state.options.method === 'popup') {
-        translatePopup(qr.irmaqr, state.options.language);
-        document.getElementById('irma-modal').classList.add('irma-show');
-        // TODO remove earlier listeners
-        document.getElementById('irma-cancel-button').addEventListener('click', () => {
-          fetch(`${state.server}/${state.token}`, {method: 'DELETE'});
-        });
-      }
+      if (state.options.method === 'popup')
+        setupPopup(qr, state.options.language, state.server, state.token);
       drawQr(state.canvas, state.qr);
       return waitConnected(state.pollUrl);
     })
@@ -151,6 +145,20 @@ function clearQr(canvas, showConnectedIcon) {
     img.onload = () => ctx.drawImage(img, 15, 15, 200, 200);
     img.src = phonePng;
   }
+}
+
+function setupPopup(qr, language, server, token) {
+  translatePopup(qr.irmaqr, language);
+  document.getElementById('irma-modal').classList.add('irma-show');
+  const cancelbtn = document.getElementById('irma-cancel-button');
+  cancelbtn.addEventListener('click', function del() {
+    fetch(`${server}/${token}`, {method: 'DELETE'});
+    // The popup including the irma-cancel-button element might be reused in later IRMA sessions,
+    // so we need to remove this listener. removeEventListener() requires a function reference,
+    // which we don't want to have to keep track of outside of setupPopup(), so we do the removing
+    // of the listener here inside the listener itself.
+    cancelbtn.removeEventListener('click', del);
+  });
 }
 
 function closePopup() {
