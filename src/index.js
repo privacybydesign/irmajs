@@ -141,8 +141,15 @@ function clearQr(canvas, showConnectedIcon) {
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   if (showConnectedIcon) {
+    const scale = window.devicePixelRatio;
+    const canvasSize = 230;
+    const imgWidth = 79;
+    const imgHeight = 150;
+    canvas.width = canvasSize * scale;
+    canvas.height = canvasSize * scale;
+    ctx.scale(scale, scale);
     const img = new Image();
-    img.onload = () => ctx.drawImage(img, 15, 15, 200, 200);
+    img.onload = () => ctx.drawImage(img, (canvasSize-imgWidth)/2, (canvasSize-imgHeight)/2, imgWidth, imgHeight);
     img.src = phonePng;
   }
 }
