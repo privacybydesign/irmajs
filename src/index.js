@@ -34,7 +34,7 @@ const document = window ? window.document : undefined;
  */
 export function handleSession(server, qr, options = {}) {
   const token = qr.u;
-  return renderQr(server + '/irma', qr, options)
+  return renderQr(qr, options)
     .then(() => {
       if (options.method === 'popup')
         closePopup();
@@ -46,16 +46,14 @@ export function handleSession(server, qr, options = {}) {
 /**
  * Render a session QR, returning when the session is complete.
  * Compatible with both irmaserver and library.
- * @param {string} server URL to server to which the IRMA app will connect (include '/irma' in case of irmaserver)
  * @param {Object} qr
  * @param {Object} options
  */
-export function renderQr(server, qr, options = {}) {
+export function renderQr(qr, options = {}) {
   const opts = Object.assign({}, optionsDefaults, options);
   let state = {
     qr,
-    server,
-    token: qr.u,
+    pollUrl: `${qr.u}/status`,
     options: opts,
   };
   if (state.options.method === 'popup')
@@ -65,11 +63,9 @@ export function renderQr(server, qr, options = {}) {
 
   return Promise.resolve()
     .then(() => {
-      state.pollUrl = `${state.server}/${state.token}/status`;
-      state.qr.u = `${state.server}/${state.token}`;
       log(state.qr);
       if (state.options.method === 'popup')
-        setupPopup(qr, state.options.language, state.server, state.token);
+        setupPopup(qr, state.options.language);
       drawQr(state.canvas, state.qr);
       return waitConnected(state.pollUrl);
     })
@@ -154,12 +150,12 @@ function clearQr(canvas, showConnectedIcon) {
   }
 }
 
-function setupPopup(qr, language, server, token) {
+function setupPopup(qr, language) {
   translatePopup(qr.irmaqr, language);
   document.getElementById('irma-modal').classList.add('irma-show');
   const cancelbtn = document.getElementById('irma-cancel-button');
   cancelbtn.addEventListener('click', function del() {
-    fetch(`${server}/${token}`, {method: 'DELETE'});
+    fetch(qr.u, {method: 'DELETE'});
     // The popup including the irma-cancel-button element might be reused in later IRMA sessions,
     // so we need to remove this listener. removeEventListener() requires a function reference,
     // which we don't want to have to keep track of outside of setupPopup(), so we do the removing
