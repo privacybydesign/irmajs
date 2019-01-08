@@ -33,7 +33,7 @@ const document = window ? window.document : undefined;
  * @param {Object} options
  */
 export function handleSession(server, qr, options = {}) {
-  const token = qr.u;
+  const token = qr.u.split('/').pop();
   return renderQr(qr, options)
     .then(() => {
       if (options.method === 'popup')
@@ -53,7 +53,6 @@ export function renderQr(qr, options = {}) {
   const opts = Object.assign({}, optionsDefaults, options);
   let state = {
     qr,
-    pollUrl: `${qr.u}/status`,
     options: opts,
   };
   if (state.options.method === 'popup')
@@ -70,7 +69,7 @@ export function renderQr(qr, options = {}) {
       return waitConnected(state.pollUrl);
     })
     .then((status) => {
-      log('2nd', state.pollUrl, status);
+      log('Session state changed', status, state.qr.u);
       if (status !== SessionStatus.Connected) {
         if (state.options.method === 'popup')
           closePopup();
@@ -191,8 +190,8 @@ function ensurePopupInitialized() {
   void(popup.offsetHeight); // void prevents Javascript optimizers from throwing away this line
 }
 
-function log(...msg) {
-  console.log(msg); // eslint-disable-line no-console
+function log() {
+  console.log.apply(console, arguments); // eslint-disable-line no-console
 }
 
 const sessionTypeMap = {

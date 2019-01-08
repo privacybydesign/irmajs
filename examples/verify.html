@@ -21,7 +21,7 @@
               return IRMA.handleSession(server, qr, {method: 'popup', element: 'modal-irmaqr', language: 'nl'});
             })
             .then((result) => console.log('Done', result))
-            .catch((err) => console.log(err));
+            .catch((err) => console.warn(err));
         });
       }
     </script>
