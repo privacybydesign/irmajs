@@ -66,7 +66,7 @@ export function renderQr(qr, options = {}) {
       if (state.options.method === 'popup')
         setupPopup(qr, state.options.language);
       drawQr(state.canvas, state.qr);
-      return waitConnected(state.pollUrl);
+      return waitConnected(state.qr.u);
     })
     .then((status) => {
       log('Session state changed', status, state.qr.u);
@@ -78,7 +78,7 @@ export function renderQr(qr, options = {}) {
       if (state.options.method === 'popup')
         translatePopupElement('irma-text', 'Messages.FollowInstructions', state.options.language);
       clearQr(state.canvas, state.options.showConnectedIcon);
-      return waitDone(state.pollUrl);
+      return waitDone(state.qr.u);
     });
 }
 
@@ -101,7 +101,7 @@ export function startSession(server, request) {
  * @param {string} url
  */
 export function waitConnected(url) {
-  return pollStatus(url, SessionStatus.Initialized);
+  return waitStatus(url, SessionStatus.Initialized);
 }
 
 /**
@@ -109,7 +109,37 @@ export function waitConnected(url) {
  * @param {string} url
  */
 export function waitDone(url) {
-  return pollStatus(url, SessionStatus.Connected);
+  return waitStatus(url, SessionStatus.Connected);
+}
+
+function waitStatus(url, status = SessionStatus.Initialized) {
+  if (!window || !window.EventSource) {
+    log('No support for EventSource, fallback to polling');
+    return pollStatus(`${url}/status`, status);
+  }
+
+  let usingServerEvents = false;
+  return new Promise((resolve, reject) => {
+    const source = new window.EventSource(`${url}/statusevents`);
+    source.onmessage = e => {
+      usingServerEvents = true;
+      log('Received server event', e);
+      source.close();
+      resolve(e.data);
+    };
+    source.onerror = e => {
+      log('Received server event error', e);
+      source.close();
+      reject(e);
+    };
+  }).catch((e) => {
+    if (!usingServerEvents) {
+      log('error in server sent event, falling back to polling');
+      return pollStatus(`${url}/status`, status);
+    } else {
+      throw e;
+    }
+  });
 }
 
 function pollStatus(url, status = SessionStatus.Initialized) {
