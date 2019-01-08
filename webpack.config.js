@@ -49,7 +49,7 @@ const serverConfig = {
   module: mod,
   externals: {
     qrcode: 'QRCode',
-    fetch: '@brillout/fetch'
+    '@brillout/fetch': 'fetch'
   }
 };
 
