@@ -8,11 +8,15 @@
     "build": "webpack --mode production"
   },
   "keywords": [],
-  "contributors": [ "Sietse Ringers", "Privacy by Design Foundation" ],
+  "contributors": [
+    "Sietse Ringers",
+    "Privacy by Design Foundation"
+  ],
   "license": "MIT",
   "dependencies": {
-    "qrcode": "^1.3.0",
-    "@brillout/fetch": "^0.1.2"
+    "@brillout/fetch": "^0.1.2",
+    "eventsource": "^1.0.7",
+    "qrcode": "^1.3.0"
   },
   "devDependencies": {
     "@babel/core": "^7.1.2",

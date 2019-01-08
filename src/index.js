@@ -22,7 +22,9 @@ const optionsDefaults = {
   showConnectedIcon: true,
 };
 
-const document = window ? window.document : undefined;
+// In the browser we fetch window.EventSource only when we need it; by then a polyfill might have defined it
+const EventSource = defined(window) ? undefined : require('eventsource').default;
+const document = defined(window) ? window.document : undefined;
 
 /**
  * Handle an IRMA session at an irmaserver, returning the session result
@@ -57,7 +59,7 @@ export function renderQr(qr, options = {}) {
   };
   if (state.options.method === 'popup')
     ensurePopupInitialized(); // TODO: Moving this down breaks the QR?!
-  if (document)
+  if (defined(document))
     state.canvas = document.getElementById(opts.element);
 
   return Promise.resolve()
@@ -113,14 +115,15 @@ export function waitDone(url) {
 }
 
 function waitStatus(url, status = SessionStatus.Initialized) {
-  if (!window || !window.EventSource) {
-    log('No support for EventSource, fallback to polling');
-    return pollStatus(`${url}/status`, status);
-  }
-
   let usingServerEvents = false;
   return new Promise((resolve, reject) => {
-    const source = new window.EventSource(`${url}/statusevents`);
+    const EvtSource = defined(window) ? window.EventSource : EventSource;
+    if (!defined(EvtSource)) {
+      log('No support for EventSource, fallback to polling');
+      return pollStatus(`${url}/status`, status);
+    }
+
+    const source = new EvtSource(`${url}/statusevents`);
     source.onmessage = e => {
       usingServerEvents = true;
       log('Received server event', e);
@@ -194,13 +197,13 @@ function setupPopup(qr, language) {
 }
 
 function closePopup() {
-  if (!document || !document.getElementById('irma-modal'))
+  if (!defined(document) || !document.getElementById('irma-modal'))
     return;
   document.getElementById('irma-modal').classList.remove('irma-show');
 }
 
 function ensurePopupInitialized() {
-  if (!document || document.getElementById('irma-modal'))
+  if (!defined(document) || document.getElementById('irma-modal'))
     return;
 
   const popup = document.createElement('div');
@@ -258,4 +261,8 @@ function getTranslatedString(id, lang) {
 
   if (res === undefined) return '';
   else return res;
+}
+
+function defined(o) {
+  return typeof(o) !== 'undefined';
 }

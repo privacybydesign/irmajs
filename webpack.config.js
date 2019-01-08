@@ -37,6 +37,9 @@ const clientConfig = {
     path: path.resolve(__dirname, 'dist')
   },
   module: mod,
+  externals: {
+    eventsource: 'EventSource'
+  }
 };
 
 const serverConfig = {
@@ -49,7 +52,8 @@ const serverConfig = {
   module: mod,
   externals: {
     qrcode: 'QRCode',
-    '@brillout/fetch': 'fetch'
+    '@brillout/fetch': 'fetch',
+    eventsource: 'EventSource'
   }
 };
 
