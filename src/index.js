@@ -74,14 +74,20 @@ export function renderQr(qr, options = {}) {
     .then((status) => {
       log('Session state changed', status, state.qr.u);
       if (status !== SessionStatus.Connected) {
-        if (state.options.method === 'popup')
-          closePopup();
+        if (state.options.method === 'popup') closePopup();
         return Promise.reject(status);
       }
       if (state.options.method === 'popup')
         translatePopupElement('irma-text', 'Messages.FollowInstructions', state.options.language);
       clearQr(state.canvas, state.options.showConnectedIcon);
       return waitDone(state.qr.u);
+    }).then((status) => {
+      if (state.options.method === 'popup') closePopup();
+      return status;
+    }).catch((err) => {
+      log('Error awaiting status', err);
+      if (state.options.method === 'popup') closePopup();
+      throw err;
     });
 }
 
