@@ -52,8 +52,9 @@ const serverConfig = {
   module: mod,
   externals: {
     qrcode: 'QRCode',
-    '@brillout/fetch': 'fetch',
-    eventsource: 'EventSource'
+    eventsource: 'EventSource',
+    'es6-promise': 'polyfill',
+    'isomorphic-fetch': 'fetch'
   }
 };
 

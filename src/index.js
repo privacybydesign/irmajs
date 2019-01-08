@@ -1,5 +1,6 @@
+require('es6-promise').polyfill();
+import fetch from 'isomorphic-fetch';
 import QRCode from 'qrcode';
-import fetch from '@brillout/fetch';
 
 import './irma.scss';
 import './irma.png';
