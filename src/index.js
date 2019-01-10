@@ -24,8 +24,9 @@ const optionsDefaults = {
 };
 
 // In the browser we fetch window.EventSource only when we need it; by then a polyfill might have defined it
-const EventSource = defined(window) ? undefined : require('eventsource').default;
-const document = defined(window) ? window.document : undefined;
+const browser = typeof(window) !== 'undefined';
+const EventSource = browser ? undefined : require('eventsource');
+const document = browser ? window.document : undefined;
 
 /**
  * Handle an IRMA session at an irmaserver, returning the session result
@@ -124,7 +125,7 @@ export function waitDone(url) {
 function waitStatus(url, status = SessionStatus.Initialized) {
   let usingServerEvents = false;
   return new Promise((resolve, reject) => {
-    const EvtSource = defined(window) ? window.EventSource : EventSource;
+    const EvtSource = browser ? window.EventSource : EventSource;
     if (!defined(EvtSource)) {
       log('No support for EventSource, fallback to polling');
       return pollStatus(`${url}/status`, status);

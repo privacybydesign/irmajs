@@ -1,32 +1,19 @@
 const path = require('path');
+const nodeExternals = require('webpack-node-externals');
 
-const mod = {
-  rules: [
-    {
-      test: /\.js$/,
-      exclude: /(node_modules|bower_components)/,
-      use: {
-        loader: 'babel-loader',
-        options: {
-          presets: ['@babel/preset-env'],
-          plugins: ['@babel/plugin-proposal-object-rest-spread']
-        }
+const sharedRules = [
+  {
+    test: /\.js$/,
+    exclude: /(node_modules|bower_components)/,
+    use: {
+      loader: 'babel-loader',
+      options: {
+        presets: ['@babel/preset-env'],
+        plugins: ['@babel/plugin-proposal-object-rest-spread']
       }
-    },
-    {
-      test: /\.scss$/,
-      use: ['style-loader', 'css-loader', 'sass-loader']
-    },
-    {
-      test: /\.(png|svg|jpg|gif)$/,
-      use: ['url-loader']
-    },
-    {
-      test: /\.html$/,
-      use: ['html-loader']
     }
-  ],
-};
+  },
+];
 
 const clientConfig = {
   target: 'web',
@@ -36,7 +23,22 @@ const clientConfig = {
     library: 'IRMA',
     path: path.resolve(__dirname, 'dist')
   },
-  module: mod,
+  module: {
+    rules: sharedRules.concat([
+      {
+        test: /\.scss$/,
+        use: ['style-loader', 'css-loader', 'sass-loader']
+      },
+      {
+        test: /\.(png|svg|jpg|gif)$/,
+        use: 'url-loader'
+      },
+      {
+        test: /\.html$/,
+        use: 'html-loader'
+      }
+    ])
+  },
   externals: {
     eventsource: 'EventSource'
   }
@@ -47,15 +49,26 @@ const serverConfig = {
   entry: './src/index.js',
   output: {
     filename: 'bundle.node.js',
+    libraryTarget: 'commonjs',
     path: path.resolve(__dirname, 'dist')
   },
-  module: mod,
-  externals: {
-    qrcode: 'QRCode',
-    eventsource: 'EventSource',
-    'es6-promise': 'polyfill',
-    'isomorphic-fetch': 'fetch'
-  }
+  module: {
+    rules: sharedRules.concat([
+      {
+        test: /\.scss$/,
+        use: 'null-loader'
+      },
+      {
+        test: /\.(png|svg|jpg|gif)$/,
+        use: 'url-loader'
+      },
+      {
+        test: /\.html$/,
+        use: 'null-loader'
+      }
+    ])
+  },
+  externals: [nodeExternals()],
 };
 
 module.exports = [ clientConfig, serverConfig ];
