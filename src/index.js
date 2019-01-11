@@ -52,31 +52,24 @@ export function handleSession(server, qr, options = {}) {
  * @param {Object} options
  */
 export function renderQr(qr, options = {}) {
-  const opts = processOptions(options);
-  let state = {
-    qr,
-    options: opts,
-  };
-  const method = state.options.method;
-  if (method === 'popup')
-    ensurePopupInitialized(); // TODO: Moving this down breaks the QR?!
-  if (method === 'popup' || method === 'canvas')
-    state.canvas = window.document.getElementById(opts.element);
-
+  let state = { qr };
   const finished = (state) => state.options.method === 'url';
 
   return Promise.resolve()
     // 1st phase: session started, phone not yet connected
     .then(() => {
       log('Session started', state.qr);
-      const method = state.options.method;
-      switch (method) {
+      state.options = processOptions(options);
+      state.method = state.options.method;
+      switch (state.method) {
         case 'url':
           return QRCode.toDataURL(JSON.stringify(state.qr));
         case 'popup':
           setupPopup(qr, state.options.language);
           // fallthrough
         case 'canvas':
+          state.canvas = window.document.getElementById(state.options.element);
+          if (!state.canvas) return Promise.reject('Specified canvas not found in DOM');
           drawQr(state.canvas, state.qr);
           break;
         case 'console':
@@ -92,11 +85,7 @@ export function renderQr(qr, options = {}) {
       if (finished(state)) return status;
 
       log('Session state changed', status, state.qr.u);
-      if (status !== SessionStatus.Connected)
-        return Promise.reject(status);
-
-      const method = state.options.method;
-      switch (method) {
+      switch (state.method) {
         case 'popup':
           translatePopupElement('irma-text', 'Messages.FollowInstructions', state.options.language);
           // fallthrough
@@ -108,17 +97,16 @@ export function renderQr(qr, options = {}) {
       return waitDone(state.qr.u);
     })
 
-    // 3rd phase: session cancelled, timeout or done
+    // 3rd phase: session done
     .then((status) => {
       if (finished(state)) return status;
-      if (state.options.method === 'popup') closePopup();
-      if (status !== SessionStatus.Done)
-        return Promise.reject(status);
+      if (state.method === 'popup') closePopup();
       return status;
     })
+
     .catch((err) => {
-      log('Error awaiting status', err);
-      if (state.options.method === 'popup') closePopup();
+      log('Error or unexpected status', err);
+      if (state.method === 'popup') closePopup();
       throw err;
     });
 }
@@ -142,7 +130,12 @@ export function startSession(server, request) {
  * @param {string} url
  */
 export function waitConnected(url) {
-  return waitStatus(url, SessionStatus.Initialized);
+  return waitStatus(url, SessionStatus.Initialized)
+    .then((status) => {
+      if (status !== SessionStatus.Connected)
+        return Promise.reject(status);
+      return status;
+    });
 }
 
 /**
@@ -150,7 +143,12 @@ export function waitConnected(url) {
  * @param {string} url
  */
 export function waitDone(url) {
-  return waitStatus(url, SessionStatus.Connected);
+  return waitStatus(url, SessionStatus.Connected)
+    .then((status) => {
+      if (status !== SessionStatus.Done)
+        return Promise.reject(status);
+      return status;
+    });
 }
 
 function waitStatus(url, status = SessionStatus.Initialized) {
@@ -165,7 +163,7 @@ function waitStatus(url, status = SessionStatus.Initialized) {
     const source = new EvtSource(`${url}/statusevents`);
     source.onmessage = e => {
       usingServerEvents = true;
-      log('Received server event', e);
+      log('Received server event', e.data);
       source.close();
       resolve(e.data);
     };
@@ -203,6 +201,8 @@ function processOptions(o) {
     case 'url': break;
     case 'popup':
       if (!browser) throw new Error('Cannot use console method popup in node');
+      if (options.element !== 'modal-irmaqr') throw new Error('`element` must be `modal-irmaqr` in popup mode');
+      if (!(options.language in translations)) throw new Error('Unsupported language, currently supported: ' + Object.keys(translations).join(', '));
       break;
     case 'canvas':
       if (!browser) throw new Error('Cannot use console method canvas in node');
@@ -244,6 +244,7 @@ function clearQr(canvas, showConnectedIcon) {
 }
 
 function setupPopup(qr, language) {
+  ensurePopupInitialized();
   translatePopup(qr.irmaqr, language);
   window.document.getElementById('irma-modal').classList.add('irma-show');
   const cancelbtn = window.document.getElementById('irma-cancel-button');

@@ -11,5 +11,4 @@ const request = {
 
 irma.startSession(server, request)
   .then(qr => irma.handleSession(server, qr, {method: 'console'}))
-  .then(result => console.log('Done', result))
-  .catch(err => console.warn(err));
+  .then(result => console.log('Done', result));

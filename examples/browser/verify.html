@@ -16,9 +16,8 @@
         };
 
         irma.startSession(server, request)
-          .then(qr => irma.handleSession(server, qr, {method: 'popup', language: 'nl'}))
-          .then(result => console.log('Done', result))
-          .catch(err => console.warn(err));
+          .then(qr => irma.handleSession(server, qr, {method: 'popup', language: 'en'}))
+          .then(result => console.log('Done', result));
       }
 
       window.onload = function() {
