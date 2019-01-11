@@ -63,36 +63,57 @@ export function renderQr(qr, options = {}) {
   if (browser)
     state.canvas = window.document.getElementById(opts.element);
 
+  const finished = (state) => state.options.method === 'url';
+
   return Promise.resolve()
     // 1st phase: session started, phone not yet connected
     .then(() => {
-      log(state.qr);
+      log('Session started', state.qr);
       const method = state.options.method;
-      if (method === 'popup')
-        setupPopup(qr, state.options.language);
-      if (method === 'popup' || method === 'canvas')
-        drawQr(state.canvas, state.qr);
-      if (method === 'console')
-        qrcodeterminal.generate(JSON.stringify(state.qr));
+      switch (method) {
+        case 'url':
+          return QRCode.toDataURL(JSON.stringify(state.qr));
+        case 'popup':
+          setupPopup(qr, state.options.language);
+          // fallthrough
+        case 'canvas':
+          drawQr(state.canvas, state.qr);
+          break;
+        case 'console':
+          qrcodeterminal.generate(JSON.stringify(state.qr));
+          break;
+      }
+
       return waitConnected(state.qr.u);
     })
+
     // 2nd phase: phone connected
     .then((status) => {
+      if (finished(state)) return status;
+
       log('Session state changed', status, state.qr.u);
-      const method = state.options.method;
       if (status !== SessionStatus.Connected)
         return Promise.reject(status);
-      if (method === 'popup')
-        translatePopupElement('irma-text', 'Messages.FollowInstructions', state.options.language);
-      if (method === 'popup' || method === 'canvas')
-        clearQr(state.canvas, state.options.showConnectedIcon);
+
+      const method = state.options.method;
+      switch (method) {
+        case 'popup':
+          translatePopupElement('irma-text', 'Messages.FollowInstructions', state.options.language);
+          // fallthrough
+        case 'canvas':
+          clearQr(state.canvas, state.options.showConnectedIcon);
+          break;
+      }
+
       return waitDone(state.qr.u);
     })
+
     // 3rd phase: session cancelled, timeout or done
     .then((status) => {
+      if (finished(state)) return status;
+      if (state.options.method === 'popup') closePopup();
       if (status !== SessionStatus.Done)
         return Promise.reject(status);
-      if (state.options.method === 'popup') closePopup();
       return status;
     })
     .catch((err) => {
