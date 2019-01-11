@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8"/>
     <title>IRMA attribute verification example</title>
-    <script src="../dist/bundle.js" defer></script>
+    <script src="../../dist/bundle.js" defer></script>
     <script type="text/javascript">
       function doSession() {
         const server = 'http://localhost:48680';
@@ -16,9 +16,7 @@
         };
 
         irma.startSession(server, request)
-          .then(qr => {
-            return irma.handleSession(server, qr, {method: 'popup', element: 'modal-irmaqr', language: 'nl'});
-          })
+          .then(qr => irma.handleSession(server, qr, {method: 'popup', language: 'nl'}))
           .then(result => console.log('Done', result))
           .catch(err => console.warn(err));
       }

@@ -22,7 +22,7 @@ export const SessionStatus = {
 
 const optionsDefaults = {
   method: 'popup',
-  element: 'irmaqr',
+  element: 'modal-irmaqr',
   language: 'en',
   showConnectedIcon: true,
 };

@@ -1,0 +1,17 @@
+{
+  "name": "irmajs-node-example",
+  "version": "0.0.1",
+  "description": "irmajs example in node",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "contributors": [
+    "Sietse Ringers",
+    "Privacy by Design Foundation"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "irmajs": "file:../.."
+  }
+}
