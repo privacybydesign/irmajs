@@ -7,7 +7,6 @@ import fetch from 'isomorphic-fetch';
 import QRCode from 'qrcode';
 
 import './irma.scss';
-import './irma.png';
 import phonePng from './phone.png';
 import popupHtml from './popup.html';
 import translations from './translations';
@@ -53,14 +52,15 @@ export function handleSession(server, qr, options = {}) {
  * @param {Object} options
  */
 export function renderQr(qr, options = {}) {
-  const opts = Object.assign({}, optionsDefaults, options);
+  const opts = processOptions(options);
   let state = {
     qr,
     options: opts,
   };
-  if (state.options.method === 'popup')
+  const method = state.options.method;
+  if (method === 'popup')
     ensurePopupInitialized(); // TODO: Moving this down breaks the QR?!
-  if (browser)
+  if (method === 'popup' || method === 'canvas')
     state.canvas = window.document.getElementById(opts.element);
 
   const finished = (state) => state.options.method === 'url';
@@ -194,6 +194,28 @@ function pollStatus(url, status = SessionStatus.Initialized) {
     };
     poller(status, resolve);
   });
+}
+
+function processOptions(o) {
+  log('Options:', o);
+  const options = Object.assign({}, optionsDefaults, o);
+  switch (options.method) {
+    case 'url': break;
+    case 'popup':
+      if (!browser) throw new Error('Cannot use console method popup in node');
+      break;
+    case 'canvas':
+      if (!browser) throw new Error('Cannot use console method canvas in node');
+      if (typeof(options.element) !== 'string' || options.element === '')
+        throw new Error('canvas method requires `element` to be provided in options');
+      break;
+    case 'console':
+      if (browser) throw new Error('Cannot use console method in browser');
+      break;
+    default:
+      throw new Error('Unsupported method');
+  }
+  return options;
 }
 
 function drawQr(canvas, qr) {
