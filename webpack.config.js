@@ -61,7 +61,7 @@ const serverConfig = {
       },
       {
         test: /\.(png|svg|jpg|gif)$/,
-        use: 'url-loader'
+        use: 'null-loader'
       },
       {
         test: /\.html$/,

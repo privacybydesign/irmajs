@@ -11,19 +11,20 @@ import phonePng from './phone.png';
 import popupHtml from './popup.html';
 import translations from './translations';
 
+const optionsDefaults = {
+  method:            'popup',            // Supported methods: 'popup' and 'canvas' (only browser), 'console' (only node), 'url' (both)
+  element:           'irmaqr',           // ID of the canvas to draw to if method === 'canvas'
+  language:          'en',               // Popup language when method === 'popup'
+  returnStatus:      SessionStatus.Done, // When the session reaches this status control is returned to the caller
+  showConnectedIcon: true,               // When method is 'popup' or 'canvas', replace QR with an icon when phone connects
+};
+
 export const SessionStatus = {
   Initialized: 'INITIALIZED', // The session has been started and is waiting for the client
   Connected  : 'CONNECTED',   // The client has retrieved the session request, we wait for its response
   Cancelled  : 'CANCELLED',   // The session is cancelled, possibly due to an error
   Done       : 'DONE',        // The session has completed successfully
   Timeout    : 'TIMEOUT',     // Session timed out
-};
-
-const optionsDefaults = {
-  method: 'popup',
-  element: 'modal-irmaqr',
-  language: 'en',
-  showConnectedIcon: true,
 };
 
 /**
@@ -46,14 +47,14 @@ export function handleSession(server, qr, options = {}) {
 }
 
 /**
- * Render a session QR, returning when the session is complete.
+ * Render a session QR. Returns a promise that resolves immediately afterwards,
+ * or after the phone connects, or after the session is done, depending on the options.
  * Compatible with both irmaserver and library.
  * @param {Object} qr
  * @param {Object} options
  */
 export function renderQr(qr, options = {}) {
-  let state = { qr };
-  const finished = (state) => state.options.method === 'url';
+  let state = { qr, done: false };
 
   return Promise.resolve()
     // 1st phase: session started, phone not yet connected
@@ -63,6 +64,7 @@ export function renderQr(qr, options = {}) {
       state.method = state.options.method;
       switch (state.method) {
         case 'url':
+          state.done = true;
           return QRCode.toDataURL(JSON.stringify(state.qr));
         case 'popup':
           setupPopup(qr, state.options.language);
@@ -77,12 +79,16 @@ export function renderQr(qr, options = {}) {
           break;
       }
 
+      if (state.options.returnStatus === SessionStatus.Initialized) {
+        state.done = true;
+        return SessionStatus.Initialized;
+      }
       return waitConnected(state.qr.u);
     })
 
     // 2nd phase: phone connected
     .then((status) => {
-      if (finished(state)) return status;
+      if (state.done) return status;
 
       log('Session state changed', status, state.qr.u);
       switch (state.method) {
@@ -94,12 +100,16 @@ export function renderQr(qr, options = {}) {
           break;
       }
 
+      if (state.options.returnStatus === SessionStatus.Connected) {
+        state.done = true;
+        return SessionStatus.Connected;
+      }
       return waitDone(state.qr.u);
     })
 
     // 3rd phase: session done
     .then((status) => {
-      if (finished(state)) return status;
+      if (state.done) return status;
       if (state.method === 'popup') closePopup();
       return status;
     })
@@ -200,12 +210,13 @@ function processOptions(o) {
   switch (options.method) {
     case 'url': break;
     case 'popup':
-      if (!browser) throw new Error('Cannot use console method popup in node');
-      if (options.element !== 'modal-irmaqr') throw new Error('`element` must be `modal-irmaqr` in popup mode');
+      if (!browser) throw new Error('Cannot use method popup in node');
       if (!(options.language in translations)) throw new Error('Unsupported language, currently supported: ' + Object.keys(translations).join(', '));
+      options.element = 'modal-irmaqr';
+      options.returnStatus = SessionStatus.Done;
       break;
     case 'canvas':
-      if (!browser) throw new Error('Cannot use console method canvas in node');
+      if (!browser) throw new Error('Cannot use method canvas in node');
       if (typeof(options.element) !== 'string' || options.element === '')
         throw new Error('canvas method requires `element` to be provided in options');
       break;
