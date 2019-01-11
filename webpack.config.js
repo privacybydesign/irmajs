@@ -20,7 +20,7 @@ const clientConfig = {
   entry: './src/index.js',
   output: {
     filename: 'bundle.js',
-    library: 'IRMA',
+    library: 'irma',
     path: path.resolve(__dirname, 'dist')
   },
   module: {
@@ -40,7 +40,8 @@ const clientConfig = {
     ])
   },
   externals: {
-    eventsource: 'EventSource'
+    eventsource: 'EventSource',
+    'qrcode-terminal': 'qrcode'
   }
 };
 

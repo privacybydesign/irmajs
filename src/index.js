@@ -1,4 +1,8 @@
 require('es6-promise').polyfill();
+const browser = typeof(window) !== 'undefined';
+const qrcodeterminal = !browser ? require('qrcode-terminal') : undefined;
+const EventSource = !browser ? require('eventsource') : undefined;
+
 import fetch from 'isomorphic-fetch';
 import QRCode from 'qrcode';
 
@@ -22,11 +26,6 @@ const optionsDefaults = {
   language: 'en',
   showConnectedIcon: true,
 };
-
-// In the browser we fetch window.EventSource only when we need it; by then a polyfill might have defined it
-const browser = typeof(window) !== 'undefined';
-const EventSource = browser ? undefined : require('eventsource');
-const document = browser ? window.document : undefined;
 
 /**
  * Handle an IRMA session at an irmaserver, returning the session result
@@ -61,31 +60,42 @@ export function renderQr(qr, options = {}) {
   };
   if (state.options.method === 'popup')
     ensurePopupInitialized(); // TODO: Moving this down breaks the QR?!
-  if (defined(document))
-    state.canvas = document.getElementById(opts.element);
+  if (browser)
+    state.canvas = window.document.getElementById(opts.element);
 
   return Promise.resolve()
+    // 1st phase: session started, phone not yet connected
     .then(() => {
       log(state.qr);
-      if (state.options.method === 'popup')
+      const method = state.options.method;
+      if (method === 'popup')
         setupPopup(qr, state.options.language);
-      drawQr(state.canvas, state.qr);
+      if (method === 'popup' || method === 'canvas')
+        drawQr(state.canvas, state.qr);
+      if (method === 'console')
+        qrcodeterminal.generate(JSON.stringify(state.qr));
       return waitConnected(state.qr.u);
     })
+    // 2nd phase: phone connected
     .then((status) => {
       log('Session state changed', status, state.qr.u);
-      if (status !== SessionStatus.Connected) {
-        if (state.options.method === 'popup') closePopup();
+      const method = state.options.method;
+      if (status !== SessionStatus.Connected)
         return Promise.reject(status);
-      }
-      if (state.options.method === 'popup')
+      if (method === 'popup')
         translatePopupElement('irma-text', 'Messages.FollowInstructions', state.options.language);
-      clearQr(state.canvas, state.options.showConnectedIcon);
+      if (method === 'popup' || method === 'canvas')
+        clearQr(state.canvas, state.options.showConnectedIcon);
       return waitDone(state.qr.u);
-    }).then((status) => {
+    })
+    // 3rd phase: session cancelled, timeout or done
+    .then((status) => {
+      if (status !== SessionStatus.Done)
+        return Promise.reject(status);
       if (state.options.method === 'popup') closePopup();
       return status;
-    }).catch((err) => {
+    })
+    .catch((err) => {
       log('Error awaiting status', err);
       if (state.options.method === 'popup') closePopup();
       throw err;
@@ -126,7 +136,7 @@ function waitStatus(url, status = SessionStatus.Initialized) {
   let usingServerEvents = false;
   return new Promise((resolve, reject) => {
     const EvtSource = browser ? window.EventSource : EventSource;
-    if (!defined(EvtSource)) {
+    if (!EvtSource) {
       log('No support for EventSource, fallback to polling');
       return pollStatus(`${url}/status`, status);
     }
@@ -192,8 +202,8 @@ function clearQr(canvas, showConnectedIcon) {
 
 function setupPopup(qr, language) {
   translatePopup(qr.irmaqr, language);
-  document.getElementById('irma-modal').classList.add('irma-show');
-  const cancelbtn = document.getElementById('irma-cancel-button');
+  window.document.getElementById('irma-modal').classList.add('irma-show');
+  const cancelbtn = window.document.getElementById('irma-cancel-button');
   cancelbtn.addEventListener('click', function del() {
     fetch(qr.u, {method: 'DELETE'});
     // The popup including the irma-cancel-button element might be reused in later IRMA sessions,
@@ -205,23 +215,23 @@ function setupPopup(qr, language) {
 }
 
 function closePopup() {
-  if (!defined(document) || !document.getElementById('irma-modal'))
+  if (!browser || !window.document.getElementById('irma-modal'))
     return;
-  document.getElementById('irma-modal').classList.remove('irma-show');
+  window.document.getElementById('irma-modal').classList.remove('irma-show');
 }
 
 function ensurePopupInitialized() {
-  if (!defined(document) || document.getElementById('irma-modal'))
+  if (!browser || window.document.getElementById('irma-modal'))
     return;
 
-  const popup = document.createElement('div');
+  const popup = window.document.createElement('div');
   popup.id = 'irma-modal';
   popup.innerHTML = popupHtml;
-  document.body.appendChild(popup);
+  window.document.body.appendChild(popup);
 
-  const overlay = document.createElement('div');
+  const overlay = window.document.createElement('div');
   overlay.classList.add('irma-overlay');
-  document.body.appendChild(overlay);
+  window.document.body.appendChild(overlay);
 
   // If we add these elements and then immediately add a css class to trigger our css animations,
   // adding the elements and the css classes get bundled up and executed simultaneously,
@@ -248,7 +258,7 @@ function translatePopup(type, lang) {
 }
 
 function translatePopupElement(el, id, lang) {
-  document.getElementById(el).innerText = getTranslatedString(id, lang);
+  window.document.getElementById(el).innerText = getTranslatedString(id, lang);
 }
 
 function getTranslatedString(id, lang) {
@@ -269,8 +279,4 @@ function getTranslatedString(id, lang) {
 
   if (res === undefined) return '';
   else return res;
-}
-
-function defined(o) {
-  return typeof(o) !== 'undefined';
 }
