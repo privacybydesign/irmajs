@@ -2,7 +2,7 @@
   "name": "irmajs",
   "version": "0.0.1",
   "description": "",
-  "main": "dist/bundle.node.js",
+  "main": "dist/irma.node.js",
   "scripts": {
     "develop": "webpack --mode development --watch",
     "build": "webpack --mode production"

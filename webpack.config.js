@@ -19,7 +19,7 @@ const clientConfig = {
   target: 'web',
   entry: './src/index.js',
   output: {
-    filename: 'bundle.js',
+    filename: 'irma.js',
     library: 'irma',
     path: path.resolve(__dirname, 'dist')
   },
@@ -49,7 +49,7 @@ const serverConfig = {
   target: 'node',
   entry: './src/index.js',
   output: {
-    filename: 'bundle.node.js',
+    filename: 'irma.node.js',
     libraryTarget: 'commonjs',
     path: path.resolve(__dirname, 'dist')
   },

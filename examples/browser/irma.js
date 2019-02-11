@@ -1,0 +1,1 @@
+../../dist/irma.js
