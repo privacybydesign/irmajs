@@ -11,20 +11,20 @@ import phonePng from './phone.png';
 import popupHtml from './popup.html';
 import translations from './translations';
 
-const optionsDefaults = {
-  method:            'popup',            // Supported methods: 'popup' and 'canvas' (only browser), 'console' (only node), 'url' (both)
-  element:           'irmaqr',           // ID of the canvas to draw to if method === 'canvas'
-  language:          'en',               // Popup language when method === 'popup'
-  returnStatus:      SessionStatus.Done, // When the session reaches this status control is returned to the caller
-  showConnectedIcon: true,               // When method is 'popup' or 'canvas', replace QR with an icon when phone connects
-};
-
 export const SessionStatus = {
   Initialized: 'INITIALIZED', // The session has been started and is waiting for the client
   Connected  : 'CONNECTED',   // The client has retrieved the session request, we wait for its response
   Cancelled  : 'CANCELLED',   // The session is cancelled, possibly due to an error
   Done       : 'DONE',        // The session has completed successfully
   Timeout    : 'TIMEOUT',     // Session timed out
+};
+
+const optionsDefaults = {
+  method:            'popup',            // Supported methods: 'popup' and 'canvas' (only browser), 'console' (only node), 'url' (both)
+  element:           'irmaqr',           // ID of the canvas to draw to if method === 'canvas'
+  language:          'en',               // Popup language when method === 'popup'
+  returnStatus:      SessionStatus.Done, // When the session reaches this status control is returned to the caller
+  showConnectedIcon: true,               // When method is 'popup' or 'canvas', replace QR with an icon when phone connects
 };
 
 /**
