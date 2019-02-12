@@ -1,6 +1,6 @@
 const irma = require('irmajs');
 
-const server = 'http://localhost:48680';
+const server = 'http://localhost:8088';
 const request = {
   'type': 'disclosing',
   'content': [{
