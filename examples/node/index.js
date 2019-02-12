@@ -4,8 +4,8 @@ const server = 'http://localhost:8088';
 const request = {
   'type': 'disclosing',
   'content': [{
-    'label': 'Over 21',
-    'attributes': [ 'irma-demo.MijnOverheid.root.BSN' ]
+    'label': 'Over 18',
+    'attributes': [ 'irma-demo.MijnOverheid.ageLower.over18' ]
   }]
 };
 
