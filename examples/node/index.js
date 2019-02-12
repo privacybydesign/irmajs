@@ -1,4 +1,4 @@
-const irma = require('irmajs');
+const irma = require('@privacybydesign/irmajs');
 
 const server = 'http://localhost:8088';
 const request = {
