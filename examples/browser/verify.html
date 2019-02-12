@@ -6,7 +6,7 @@
     <script src="irma.js" defer></script>
     <script type="text/javascript">
       function doSession() {
-        const server = 'http://localhost:48680';
+        const server = document.getElementById('server').value;
         const request = {
           'type': 'disclosing',
           'content': [{
@@ -21,13 +21,15 @@
       }
 
       window.onload = function() {
-        document.getElementById('test').addEventListener('click', () => {
-          doSession();
-        })
+        document.getElementById('server').value = window.location.origin;
+        document.getElementById('test').addEventListener('click', doSession);
       };
     </script>
   </head>
   <body>
+    <label for="server">Server:</label>
+    <input id="server" type="text" style="width:20em">
+    <br/>
     <button id="test">Test</button>
   </body>
 </html>
