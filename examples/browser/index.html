@@ -3,33 +3,98 @@
   <head>
     <meta charset="utf-8"/>
     <title>IRMA attribute verification example</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
     <script src="irma.js" defer></script>
     <script type="text/javascript">
-      function doSession() {
-        const server = document.getElementById('server').value;
-        const request = {
-          'type': 'disclosing',
-          'content': [{
-            'label': 'Over 18',
-            'attributes': [ 'irma-demo.MijnOverheid.ageLower.over18' ]
-          }]
-        };
+      function doVerificationSession() {
+        const attr = document.getElementById('attr').value;
+        const label = document.getElementById('label').value;
+        const message = document.getElementById('message').value;
+        if (!message) {
+          doSession({
+            'type': 'disclosing',
+            'content': [{
+              'label': label, 'attributes': [ attr ]
+            }]
+          });
+        } else {
+          doSession({
+            'type': 'signing',
+            'message': message,
+            'content': [{
+              'label': label, 'attributes': [ attr ]
+            }]
+          });
+        }
+      }
 
+      function doIssuanceSession() {
+        const attrs = document.getElementById('newattrs').value.split(',');
+        doSession({
+          'type': 'issuing',
+          'credentials': [{
+            'credential': 'irma-demo.MijnOverheid.ageLower',
+            'attributes': { 'over12': attrs[0], 'over16': attrs[1], 'over18': attrs[2], 'over21': attrs[3] }
+          }]
+        });
+      }
+
+      function doSession(request) {
+        const server = document.getElementById('server').value;
         irma.startSession(server, request)
           .then(qr => irma.handleSession(server, qr, {method: 'popup', language: 'en'}))
-          .then(result => console.log('Done', result));
+          .then(result => {
+            console.log('Done', result);
+            document.getElementById('attrval').innerHTML = result.Disclosed[0].rawvalue;
+          });
       }
 
       window.onload = function() {
         document.getElementById('server').value = window.location.origin;
-        document.getElementById('test').addEventListener('click', doSession);
+        document.getElementById('issuance').addEventListener('click', doIssuanceSession);
+        document.getElementById('verification').addEventListener('click', doVerificationSession);
       };
     </script>
   </head>
   <body>
-    <label for="server">Server:</label>
-    <input id="server" type="text" style="width:20em">
-    <br/>
-    <button id="test">Test</button>
+    <div id="container">
+      <h1>irmajs demo</h1>
+
+      <p>
+        This page contains an IRMA attribute issuance and verification demo.
+      </p>
+      <ul>
+        <li>You should have an <a href="https://github.com/privacybydesign/irmago/tree/master/server/irmad"><code>irma server</code></a> running with the <code>no_auth</code> option enabled.</li>
+        <li>Open the browser console to see log output and error messages.</li>
+      </ul>
+
+      <label for="server" class="label"><code>irma server</code> URL:</label>
+      <input id="server" type="text"><br/>
+
+      <h3>Attribute issuance</h3>
+      <p>
+          This will issue an <a href="https://privacybydesign.foundation/attribute-index/en/irma-demo.MijnOverheid.ageLower.html"><code>irma-demo.MijnOverheid.ageLower</code></a> credential. Separate four attributes with commas.
+      </p>
+      <label for="newattrs" class="label">Attributes:</label>
+      <input type="text" id="newattrs" value="yes,yes,yes,no"><br/>
+      <button id="issuance">Issue attributes</button>
+
+      <h3>Attribute verification</h3>
+      <p>
+          This will verify an IRMA attribute. You can look up attributes that can be verified in the <a href="https://privacybydesign.foundation/attribute-index/en/">IRMA attribute index</a>.
+          If you include a message, then that message will be signed with an attribute-based signature.
+      </p>
+      <label for="attr" class="label">Attribute:</label>
+      <input id="attr" type="text" value="irma-demo.MijnOverheid.ageLower.over18"><br/>
+      <label for="label" class="label">Label:</label>
+      <input id="label" type="text" value="Over 18"><br/>
+      <label for="message" class="label">Message:</label>
+      <input id="message" type="text"><br/>
+      <div id="attrval-container">
+          <span class="label">Attribute value:</span><span id="attrval"></span>
+      </div>
+      <button id="verification">Verify attribute</button>
+
+    </div>
   </body>
 </html>

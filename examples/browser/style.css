@@ -1,0 +1,36 @@
+body, button, input {
+  font-family: "Arial";
+  line-height: 1.3em;
+  font-size: 16px;
+}
+
+input {
+  width: 20em;
+}
+
+button {
+  margin-top: 1em;
+  padding: 0.2em;
+}
+
+#container {
+  margin: 50px auto;
+  max-width: 600px;
+}
+
+.label {
+  display: inline-block;
+  width: 140px;
+  text-align: right;
+  margin-bottom: 0.3em;
+}
+
+#attrval {
+  font-weight: bold;
+  margin-left: 0.5em;
+}
+
+#attrval-container {
+  margin-top: 1em;
+  margin-bottom: 0.3em;
+}
