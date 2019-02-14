@@ -12,7 +12,7 @@ import popupHtml from './popup.html';
 import translations from './translations';
 
 export const SessionStatus = {
-  Initialized: 'INITIALIZED', // The session has been started and is waiting for the client
+  Initialized: 'INITIALIZED', // The session has been started and is waiting for the client to connect (scan the QR)
   Connected  : 'CONNECTED',   // The client has retrieved the session request, we wait for its response
   Cancelled  : 'CANCELLED',   // The session is cancelled, possibly due to an error
   Done       : 'DONE',        // The session has completed successfully
@@ -23,39 +23,30 @@ const optionsDefaults = {
   method:            'popup',            // Supported methods: 'popup' and 'canvas' (only browser), 'console' (only node), 'url' (both)
   element:           'irmaqr',           // ID of the canvas to draw to if method === 'canvas'
   language:          'en',               // Popup language when method === 'popup'
+  showConnectedIcon: true,               // When method is 'popup' or 'canvas', replace QR with a phone icon when phone connects
   returnStatus:      SessionStatus.Done, // When the session reaches this status control is returned to the caller
-  showConnectedIcon: true,               // When method is 'popup' or 'canvas', replace QR with an icon when phone connects
+  server:            '',                 // Server URL to fetch the session result from after the session is done
+  resultJwt:         false,              // Retrieve signed session result from the irma server
 };
 
 /**
- * Handle an IRMA session at an irmaserver, returning the session result
- * when done. This function assumes the session has already been created
- * (e.g. using startSession()).
- * @param {string} server URL to irmaserver
- * @param {Object} qr
- * @param {Object} options
- */
-export function handleSession(server, qr, options = {}) {
-  const token = qr.u.split('/').pop();
-  return renderQr(qr, options)
-    .then(() => {
-      if (options.method === 'popup')
-        closePopup();
-      return fetch(`${server}/session/${token}/result`);
-    })
-    .then(handleFetchErrors)
-    .then((res) => res.json());
-}
-
-/**
- * Render a session QR. Returns a promise that resolves immediately afterwards,
- * or after the phone connects, or after the session is done, depending on the options.
+ * Handle an IRMA session after it has been created at an irma server, given the QR contents
+ * to be sent to the IRMA app. This function can (1) draw an IRMA QR, (2) wait for the phone to
+ * connect, (3) wait for the session to complete, and (4) retrieve the session result afterwards
+ * from the irma server. 
+ * Returns a promise that can return at any of these phases, depending on the options.
  * Compatible with both `irma server` cli and Go `irmaserver` library.
  * @param {Object} qr
  * @param {Object} options
  */
-export function renderQr(qr, options = {}) {
+export function handleSession(qr, options = {}) {
+  const token = qr.u.split('/').pop();
   let state = { qr, done: false };
+
+  // When we start the session is always in the Initialized state, but the state at which
+  // we return control to the caller depends on the options. See the function comment.
+  // We implement this by 4 chained promises, each of which can "break out of the chain" by
+  // setting state.done to true, after which all remaining then's return immediately.
 
   return Promise.resolve()
     // 1st phase: session started, phone not yet connected
@@ -111,8 +102,20 @@ export function renderQr(qr, options = {}) {
     // 3rd phase: session done
     .then((status) => {
       if (state.done) return status;
-      if (state.method === 'popup') closePopup();
-      return status;
+
+      if (state.method === 'popup')
+        closePopup();
+      if (state.options.server.length === 0) {
+        state.done = true;
+        return status;
+      }
+      return fetchCheck(`${state.options.server}/session/${token}/${ state.options.resultJwt ? 'result-jwt' : 'result' }`);
+    })
+
+    // 4th phase: handle session result received from irmaserver
+    .then((response) => {
+      if (state.done) return response;
+      return state.options.resultJwt ? response.text() : response.json();
     })
 
     .catch((err) => {
@@ -150,9 +153,8 @@ export function startSession(server, request, method, key, name) {
         default:
           throw new Error('Unsupported authentication method');
       }
-      return fetch(`${server}/session`, {method: 'POST', headers, body});
+      return fetchCheck(`${server}/session`, {method: 'POST', headers, body});
     })
-    .then(handleFetchErrors)
     .then((res) => res.json());
 }
 
@@ -250,8 +252,7 @@ function waitStatus(url, status = SessionStatus.Initialized) {
 function pollStatus(url, status = SessionStatus.Initialized) {
   return new Promise((resolve, reject) => {
     const poller = (status, resolve) => {
-      fetch(url)
-        .then(handleFetchErrors)
+      fetchCheck(url)
         .then((response) => response.json())
         .then((text) => text !== status ? resolve(text) : setTimeout(poller, 500, status, resolve))
         .catch((err) => reject(err));
@@ -282,6 +283,12 @@ function processOptions(o) {
     default:
       throw new Error('Unsupported method');
   }
+  if (typeof(options.server) !== 'string')
+    throw new Error('server must be a string (URL)');
+  if (options.server.length > 0 && options.returnStatus !== SessionStatus.Done)
+    throw new Error('If server option is used, returnStatus option must be SessionStatus.Done');
+  if (options.resultJwt && options.server.length === 0)
+    throw new Error('resultJwt option was enabled but no server to retrieve result from was provided');
   return options;
 }
 
@@ -293,6 +300,12 @@ function handleFetchErrors(response) {
     });
   }
   return response;
+}
+
+function fetchCheck() {
+  return fetch
+    .apply(null, arguments)
+    .then(handleFetchErrors);
 }
 
 function drawQr(canvas, qr) {
@@ -326,7 +339,7 @@ function setupPopup(qr, language) {
   window.document.getElementById('irma-modal').classList.add('irma-show');
   const cancelbtn = window.document.getElementById('irma-cancel-button');
   cancelbtn.addEventListener('click', function del() {
-    fetch(qr.u, {method: 'DELETE'});
+    fetch(qr.u, {method: 'DELETE'}); // We ignore server errors by not using fetchCheck
     // The popup including the irma-cancel-button element might be reused in later IRMA sessions,
     // so we need to remove this listener. removeEventListener() requires a function reference,
     // which we don't want to have to keep track of outside of setupPopup(), so we do the removing

@@ -46,7 +46,7 @@
         const requestorname = document.getElementById('requestor').value;
 
         irma.startSession(server, request, authmethod, key, requestorname)
-          .then(qr => irma.handleSession(server, qr, {method: 'popup', language: 'en'}))
+          .then(qr => irma.handleSession(qr, {server, method: 'popup', language: 'en'}))
           .then(result => {
             console.log('Done', result);
             document.getElementById('attrval').innerHTML = result.Disclosed[0].rawvalue;
@@ -86,6 +86,7 @@
         document.getElementById('issuance').addEventListener('click', doIssuanceSession);
         document.getElementById('verification').addEventListener('click', doVerificationSession);
         document.getElementById('method').addEventListener('change', methodChanged);
+        methodChanged();
       };
     </script>
   </head>

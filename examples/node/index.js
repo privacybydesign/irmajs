@@ -10,5 +10,5 @@ const request = {
 };
 
 irma.startSession(server, request)
-  .then(qr => irma.handleSession(server, qr, {method: 'console'}))
+  .then(qr => irma.handleSession(qr, {server, method: 'console'}))
   .then(result => console.log('Done', result));
