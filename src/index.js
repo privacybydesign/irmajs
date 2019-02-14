@@ -5,6 +5,7 @@ const EventSource = !browser ? require('eventsource') : undefined;
 
 import fetch from 'isomorphic-fetch';
 import QRCode from 'qrcode';
+import jwt from 'jsonwebtoken';
 
 import './irma.scss';
 import phonePng from './phone.png';
@@ -49,7 +50,7 @@ export function handleSession(server, qr, options = {}) {
 /**
  * Render a session QR. Returns a promise that resolves immediately afterwards,
  * or after the phone connects, or after the session is done, depending on the options.
- * Compatible with both irmaserver and library.
+ * Compatible with both `irma server` cli and Go `irmaserver` library.
  * @param {Object} qr
  * @param {Object} options
  */
@@ -125,13 +126,67 @@ export function renderQr(qr, options = {}) {
  * Start an IRMA session at an irmaserver.
  * @param {string} server URL to irmaserver at which to start the session
  * @param {Object} request Session request
+ * @param {string} method authentication method (supported: undefined, none, token, hmac, rsa)
+ * @param {*} key API token or JWT key
+ * @param {string} name name of the requestor, only for hmac and rsa mode
  */
-export function startSession(server, request) {
-  return fetch(`${server}/session`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(request),
-  }).then((res) => res.json());
+export function startSession(server, request, method, key, name) {
+  return Promise.resolve()
+    .then(() => {
+      let headers = {}, body;
+      switch (method) {
+        case 'token':
+          headers['Authentication'] = key;
+          // fallthrough
+        case undefined: case 'none':
+          body = JSON.stringify(request);
+          headers['Content-Type'] = 'application/json';
+          break;
+        case 'rsa':
+          body = signSessionRequest(request, method, key, name);
+          headers['Content-Type'] = 'text/plain';
+          break;
+        case 'hmac':
+          body = signSessionRequest(request, method, key, name);
+          headers['Content-Type'] = 'text/plain';
+          break;
+        default:
+          throw new Error('Unsupported authentication method');
+      }
+      return fetch(`${server}/session`, {method: 'POST', headers, body});
+    })
+    .then((res) => res.json());
+}
+
+/**
+ * Sign a session request into a JWT, using the HMAC (HS256) or RSA (RS256) signing algorithm.
+ * @param {Object} request Session request
+ * @param {string} method authentication method (supported: undefined, none, token, hmac, rsa)
+ * @param {*} key API token or JWT key
+ * @param {string} name name of the requestor, only for hmac and rsa mode
+ */
+export function signSessionRequest(request, method, key, name) {
+  let type;
+  let rrequest;
+  if (request.type) {
+    type = request.type;
+    rrequest = { request };
+  } else if (request.request) {
+    type = request.request.type;
+    rrequest = request;
+  }
+
+  if (type !== 'disclosing' && type !== 'issuing' && type !== 'signing')
+    throw new Error('Not an IRMA session request');
+  if (method !== 'rsa' && method !== 'hmac')
+    throw new Error('Unsupported signing method');
+
+  const subjects = { disclosing: 'verification_request', issuing: 'issue_request', signing: 'signature_request' };
+  const fields = { disclosing: 'sprequest', issuing: 'iprequest', signing: 'absrequest' };
+  const algorithm = method === 'rsa' ? 'RS256' : 'HS256';
+  const jwtOptions = { algorithm, issuer: name, subject: subjects[type] };
+
+  return jwt.sign({[ fields[type] ] : rrequest}, key, jwtOptions);
 }
 
 /**

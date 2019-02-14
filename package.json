@@ -1,6 +1,6 @@
 {
   "name": "@privacybydesign/irmajs",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "",
   "main": "dist/irma.node.js",
   "scripts": {
@@ -33,6 +33,7 @@
     "eslint": "^5.7.0",
     "file-loader": "^2.0.0",
     "html-loader": "^0.5.5",
+    "jsonwebtoken": "^8.4.0",
     "kjua": "^0.1.2",
     "node-sass": "^4.9.4",
     "null-loader": "^0.1.1",

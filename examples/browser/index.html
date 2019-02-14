@@ -41,7 +41,11 @@
 
       function doSession(request) {
         const server = document.getElementById('server').value;
-        irma.startSession(server, request)
+        const authmethod = document.getElementById('method').value;
+        const key = document.getElementById(authmethod === 'rsa' ? 'key-pem' : 'key').value;
+        const requestorname = document.getElementById('requestor').value;
+
+        irma.startSession(server, request, authmethod, key, requestorname)
           .then(qr => irma.handleSession(server, qr, {method: 'popup', language: 'en'}))
           .then(result => {
             console.log('Done', result);
@@ -49,10 +53,39 @@
           });
       }
 
+      function methodChanged() {
+        switch (document.getElementById('method').value) {
+          case 'none':
+            hideElements('key-container', 'key-pem-container', 'requestor-container');
+            break;
+          case 'hmac':
+            hideElements('key-pem-container');
+            showElements('requestor-container', 'key-container');
+            break;
+          case 'token':
+            hideElements('key-pem-container', 'requestor-container');
+            showElements('key-container');
+            break;
+          case 'rsa':
+            hideElements('key-container');
+            showElements('key-pem-container', 'requestor-container');
+            break;
+        }
+      }
+
+      function hideElements(...els) {
+        for (const el of els) document.getElementById(el).setAttribute('hidden', 'true');
+      }
+
+      function showElements(...els) {
+        for (const el of els) document.getElementById(el).removeAttribute('hidden');
+      }
+
       window.onload = function() {
         document.getElementById('server').value = window.location.origin;
         document.getElementById('issuance').addEventListener('click', doIssuanceSession);
         document.getElementById('verification').addEventListener('click', doVerificationSession);
+        document.getElementById('method').addEventListener('change', methodChanged);
       };
     </script>
   </head>
@@ -64,7 +97,7 @@
         This page contains an IRMA attribute issuance and verification demo.
       </p>
       <ul>
-        <li>You should have an <a href="https://github.com/privacybydesign/irmago/tree/master/server/irmad"><code>irma server</code></a> running with the <code>no_auth</code> option enabled.</li>
+        <li>You should have an <a href="https://github.com/privacybydesign/irmago/tree/master/server/irmad"><code>irma server</code></a> running, with either the <code>no_auth</code> option enabled (default), or you can provide authentication details <a href="#authenticate-session-requests">below</a>.</li>
         <li>Open the browser console to see log output and error messages.</li>
       </ul>
 
@@ -94,6 +127,38 @@
           <span class="label">Attribute value:</span><span id="attrval"></span>
       </div>
       <button id="verification">Verify attribute</button>
+
+      <h3 id="authenticate-session-requests">Authenticate session request</h3>
+      <p>
+        If the <code>no_auth</code> setting of your <code>irma server</code> is disabled, session requests sent to the <code>irma server</code> need to be authenticated, by including an API token in a HTTP header, or signing the request into a <a href="https://jwt.io/">JWT</a>.
+      </p>
+
+      <label for="method" class="label">Method:</label>
+      <select id="method">
+        <option value="none">none</option>
+        <option value="token">token</option>
+        <option value="hmac">hmac</option>
+        <option value="rsa">rsa</option>
+      </select><br/>
+      <div id="requestor-container" hidden>
+          <label for="requestor" class="label">Requestor name:</label>
+          <input type="text" id="requestor"><br/>
+      </div>
+      <div id="key-container" hidden>
+        <label for="key" class="label">Key:</label>
+        <input type="text" id="key"><br/>
+      </div>
+      <div id="key-pem-container" hidden>
+          <label for="key-pem" class="label">Private key (PEM):</label>
+          <textarea id="key-pem" cols="45" rows="10"></textarea><br/>
+      </div>
+
+      <p>
+        <strong>Note:</strong>
+        This demo handles private keys in the user's browser. Do not do this in production!
+        You should sign the JWTs in your server's backend, or if you use an API token, <code>POST</code>
+        the session request directly from your backend to the <code>irma server</code>.
+      </p>
 
     </div>
   </body>
