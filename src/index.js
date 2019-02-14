@@ -5,7 +5,6 @@ const EventSource = !browser ? require('eventsource') : undefined;
 
 import fetch from 'isomorphic-fetch';
 import QRCode from 'qrcode';
-import jwt from 'jsonwebtoken';
 
 import './irma.scss';
 import phonePng from './phone.png';
@@ -133,22 +132,19 @@ export function renderQr(qr, options = {}) {
  */
 export function startSession(server, request, method, key, name) {
   return Promise.resolve()
-    .then(() => {
-      let headers = {}, body;
+    .then(() => method == 'rsa' || method == 'hmac' ?
+        signSessionRequest(request, method, key, name) : JSON.stringify(request))
+    .then((body) => {
+      let headers = {};
       switch (method) {
-        case 'token':
-          headers['Authentication'] = key;
-          // fallthrough
         case undefined: case 'none':
-          body = JSON.stringify(request);
           headers['Content-Type'] = 'application/json';
           break;
-        case 'rsa':
-          body = signSessionRequest(request, method, key, name);
-          headers['Content-Type'] = 'text/plain';
+        case 'token':
+          headers['Authentication'] = key;
+          headers['Content-Type'] = 'application/json';
           break;
-        case 'hmac':
-          body = signSessionRequest(request, method, key, name);
+        case 'rsa': case 'hmac':
           headers['Content-Type'] = 'text/plain';
           break;
         default:
@@ -168,27 +164,29 @@ export function startSession(server, request, method, key, name) {
  * @param {string} name name of the requestor, only for hmac and rsa mode
  */
 export function signSessionRequest(request, method, key, name) {
-  let type;
-  let rrequest;
-  if (request.type) {
-    type = request.type;
-    rrequest = { request };
-  } else if (request.request) {
-    type = request.request.type;
-    rrequest = request;
-  }
+  return import(/* webpackChunkName: "jwt" */ 'jsonwebtoken').then(jwt => {
+    let type;
+    let rrequest;
+    if (request.type) {
+      type = request.type;
+      rrequest = { request };
+    } else if (request.request) {
+      type = request.request.type;
+      rrequest = request;
+    }
 
-  if (type !== 'disclosing' && type !== 'issuing' && type !== 'signing')
-    throw new Error('Not an IRMA session request');
-  if (method !== 'rsa' && method !== 'hmac')
-    throw new Error('Unsupported signing method');
+    if (type !== 'disclosing' && type !== 'issuing' && type !== 'signing')
+      throw new Error('Not an IRMA session request');
+    if (method !== 'rsa' && method !== 'hmac')
+      throw new Error('Unsupported signing method');
 
-  const subjects = { disclosing: 'verification_request', issuing: 'issue_request', signing: 'signature_request' };
-  const fields = { disclosing: 'sprequest', issuing: 'iprequest', signing: 'absrequest' };
-  const algorithm = method === 'rsa' ? 'RS256' : 'HS256';
-  const jwtOptions = { algorithm, issuer: name, subject: subjects[type] };
+    const subjects = { disclosing: 'verification_request', issuing: 'issue_request', signing: 'signature_request' };
+    const fields = { disclosing: 'sprequest', issuing: 'iprequest', signing: 'absrequest' };
+    const algorithm = method === 'rsa' ? 'RS256' : 'HS256';
+    const jwtOptions = { algorithm, issuer: name, subject: subjects[type] };
 
-  return jwt.sign({[ fields[type] ] : rrequest}, key, jwtOptions);
+    return jwt.sign({[ fields[type] ] : rrequest}, key, jwtOptions);
+  });
 }
 
 /**

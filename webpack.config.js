@@ -9,7 +9,7 @@ const sharedRules = [
       loader: 'babel-loader',
       options: {
         presets: ['@babel/preset-env'],
-        plugins: ['@babel/plugin-proposal-object-rest-spread']
+        plugins: ['@babel/plugin-proposal-object-rest-spread', '@babel/plugin-syntax-dynamic-import']
       }
     }
   },
@@ -20,6 +20,7 @@ const clientConfig = {
   entry: './src/index.js',
   output: {
     filename: 'irma.js',
+    chunkFilename: '[name].js',
     library: 'irma',
     path: path.resolve(__dirname, 'dist')
   },
