@@ -44,6 +44,7 @@ export function handleSession(server, qr, options = {}) {
         closePopup();
       return fetch(`${server}/session/${token}/result`);
     })
+    .then(handleFetchErrors)
     .then((res) => res.json());
 }
 
@@ -155,6 +156,7 @@ export function startSession(server, request, method, key, name) {
       }
       return fetch(`${server}/session`, {method: 'POST', headers, body});
     })
+    .then(handleFetchErrors)
     .then((res) => res.json());
 }
 
@@ -251,6 +253,7 @@ function pollStatus(url, status = SessionStatus.Initialized) {
   return new Promise((resolve, reject) => {
     const poller = (status, resolve) => {
       fetch(url)
+        .then(handleFetchErrors)
         .then((response) => response.json())
         .then((text) => text !== status ? resolve(text) : setTimeout(poller, 500, status, resolve))
         .catch((err) => reject(err));
@@ -282,6 +285,16 @@ function processOptions(o) {
       throw new Error('Unsupported method');
   }
   return options;
+}
+
+function handleFetchErrors(response) {
+  if (!response.ok) {
+    return response.text().then((text) => {
+      warn('Server returned error:', text);
+      throw new Error(response.statusText);
+    });
+  }
+  return response;
 }
 
 function drawQr(canvas, qr) {
@@ -353,6 +366,10 @@ function ensurePopupInitialized() {
 
 function log() {
   console.log.apply(console, arguments); // eslint-disable-line no-console
+}
+
+function warn() {
+  console.warn.apply(console, arguments); // eslint-disable-line no-console
 }
 
 const sessionTypeMap = {
