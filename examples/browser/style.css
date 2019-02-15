@@ -9,8 +9,8 @@ input {
 }
 
 button {
-  margin-top: 1em;
-  padding: 0.2em;
+  margin: 1em 0;
+  padding: 0.3em;
 }
 
 h2, h3 {
@@ -34,7 +34,26 @@ h2, h3 {
   margin-left: 0.5em;
 }
 
-#attrval-container {
-  margin-top: 1em;
-  margin-bottom: 0.3em;
+.status {
+  margin: 1em 0;
+  padding: 1em;
+  width: 100%;
+}
+
+.success {
+  background-color: #dff0d8;
+  border-color: #d6e9c6;
+  color: #3c763d;
+}
+
+.warning {
+  color: #8a6d3b;
+  background-color: #fcf8e3;
+  border-color: #faebcc;
+}
+
+.error {
+  color: #a94442;
+  background-color: #f2dede;
+  border-color: #ebccd1;
 }

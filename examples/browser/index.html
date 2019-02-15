@@ -10,22 +10,19 @@
         const attr = document.getElementById('attr').value;
         const label = document.getElementById('label').value;
         const message = document.getElementById('message').value;
-        if (!message) {
-          doSession({
-            'type': 'disclosing',
-            'content': [{
-              'label': label, 'attributes': [ attr ]
-            }]
-          });
-        } else {
-          doSession({
-            'type': 'signing',
-            'message': message,
-            'content': [{
-              'label': label, 'attributes': [ attr ]
-            }]
-          });
-        }
+        const request = !message ? {
+          'type': 'disclosing',
+          'content': [{
+            'label': label, 'attributes': [ attr ]
+          }]
+        } : {
+          'type': 'signing',
+          'message': message,
+          'content': [{
+            'label': label, 'attributes': [ attr ]
+          }]
+        };
+        doSession(request).then(result => showSuccess('Success, attribute value: <strong>' + result.Disclosed[0].rawvalue + '</strong>'));
       }
 
       function doIssuanceSession() {
@@ -36,23 +33,60 @@
             'credential': 'irma-demo.MijnOverheid.ageLower',
             'attributes': { 'over12': attrs[0], 'over16': attrs[1], 'over18': attrs[2], 'over21': attrs[3] }
           }]
-        });
+        }).then(() => showSuccess('Success'));
       }
 
       function doSession(request) {
+        clearOutput();
+        showSuccess('Demo running...');
+
         const server = document.getElementById('server').value;
         const authmethod = document.getElementById('method').value;
         const key = document.getElementById(authmethod === 'rsa' ? 'key-pem' : 'key').value;
         const requestorname = document.getElementById('requestor').value;
 
-        irma.startSession(server, request, authmethod, key, requestorname)
+        return irma.startSession(server, request, authmethod, key, requestorname)
           .then(qr => irma.handleSession(qr, {server, method: 'popup', language: 'en'}))
           .then(result => {
             console.log('Done', result);
-            document.getElementById('attrval').innerHTML = result.Disclosed[0].rawvalue;
-          });
+            return result;
+          })
+          .catch(err => showError(err));
       }
 
+      window.onload = function() {
+        document.getElementById('server').value = window.location.origin;
+        document.getElementById('issuance').addEventListener('click', doIssuanceSession);
+        document.getElementById('verification').addEventListener('click', doVerificationSession);
+        document.getElementById('method').addEventListener('change', methodChanged);
+        methodChanged();
+      };
+
+      // UI handling functions
+      function clearOutput() {
+        const e = document.getElementById('result');
+        e.setAttribute('hidden', 'true');
+        e.classList.remove('succes', 'warning', 'error');
+      }
+      function showError(err) {
+        const e = document.getElementById('result');
+        e.removeAttribute('hidden');
+        e.classList.remove('success');
+        if (err === irma.SessionStatus.Cancelled) {
+          e.classList.add('warning');
+          e.innerText = 'Session was aborted';
+        } else {
+          e.classList.add('error');
+          e.innerText = 'Error occurred: ' + String(err);
+        }
+        throw err;
+      }
+      function showSuccess(text) {
+        const e = document.getElementById('result');
+        e.innerHTML = text;
+        e.removeAttribute('hidden');
+        e.classList.add('success');
+      }
       function methodChanged() {
         switch (document.getElementById('method').value) {
           case 'none':
@@ -72,22 +106,12 @@
             break;
         }
       }
-
       function hideElements(...els) {
         for (const el of els) document.getElementById(el).setAttribute('hidden', 'true');
       }
-
       function showElements(...els) {
         for (const el of els) document.getElementById(el).removeAttribute('hidden');
       }
-
-      window.onload = function() {
-        document.getElementById('server').value = window.location.origin;
-        document.getElementById('issuance').addEventListener('click', doIssuanceSession);
-        document.getElementById('verification').addEventListener('click', doVerificationSession);
-        document.getElementById('method').addEventListener('change', methodChanged);
-        methodChanged();
-      };
     </script>
   </head>
   <body>
@@ -103,7 +127,9 @@
       </ul>
 
       <label for="server" class="label"><code>irma server</code> URL:</label>
-      <input id="server" type="text"><br/>
+      <input id="server" type="text">
+
+      <div id="result" class="status" hidden></div>
 
       <h2>Demo 1: attribute issuance</h2>
       <p>
@@ -124,9 +150,6 @@
       <input id="label" type="text" value="Over 18"><br/>
       <label for="message" class="label">Message:</label>
       <input id="message" type="text"><br/>
-      <div id="attrval-container">
-          <span class="label">Attribute value:</span><span id="attrval"></span>
-      </div>
       <button id="verification">Verify attribute</button>
 
       <h3 id="authenticate-session-requests">Authenticate session request</h3>
