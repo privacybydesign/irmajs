@@ -148,7 +148,7 @@ export function startSession(server, request, method, key, name) {
           headers['Content-Type'] = 'application/json';
           break;
         case 'token':
-          headers['Authentication'] = key;
+          headers['Authorization'] = key;
           headers['Content-Type'] = 'application/json';
           break;
         case 'rsa': case 'hmac':
