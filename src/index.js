@@ -135,8 +135,12 @@ export function handleSession(qr, options = {}) {
  */
 export function startSession(server, request, method, key, name) {
   return Promise.resolve()
-    .then(() => method == 'rsa' || method == 'hmac' ?
-        signSessionRequest(request, method, key, name) : JSON.stringify(request))
+    .then(() => {
+      if (typeof(request) === 'object')
+        return method == 'rsa' || method == 'hmac' ? signSessionRequest(request, method, key, name) : JSON.stringify(request);
+      else
+        return request;
+    })
     .then((body) => {
       let headers = {};
       switch (method) {
@@ -230,7 +234,6 @@ function waitStatus(url, status = SessionStatus.Initialized) {
     const source = new EvtSource(`${url}/statusevents`);
     source.onmessage = e => {
       usingServerEvents = true;
-      log('Received server event', e.data);
       source.close();
       resolve(e.data);
     };
