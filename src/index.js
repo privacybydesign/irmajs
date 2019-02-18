@@ -20,13 +20,14 @@ export const SessionStatus = {
 };
 
 const optionsDefaults = {
-  method:            'popup',            // Supported methods: 'popup' and 'canvas' (only browser), 'console' (only node), 'url' (both)
+  method:            'popup',            // Supported methods: 'popup', 'canvas', 'mobile' (only browser), 'console' (only node), 'url' (both)
   element:           'irmaqr',           // ID of the canvas to draw to if method === 'canvas'
   language:          'en',               // Popup language when method === 'popup'
   showConnectedIcon: true,               // When method is 'popup' or 'canvas', replace QR with a phone icon when phone connects
   returnStatus:      SessionStatus.Done, // When the session reaches this status control is returned to the caller
   server:            '',                 // Server URL to fetch the session result from after the session is done
   resultJwt:         false,              // Retrieve signed session result from the irma server
+  disableMobile:     false,              // Disable automatic navigation to IRMA app on mobile
 };
 
 /**
@@ -58,6 +59,9 @@ export function handleSession(qr, options = {}) {
         case 'url':
           state.done = true;
           return QRCode.toDataURL(JSON.stringify(state.qr));
+        case 'mobile':
+          startMobileSession(qr, state.options.userAgent);
+          break;
         case 'popup':
           setupPopup(qr, state.options.language);
           // fallthrough
@@ -223,7 +227,6 @@ export function waitDone(url) {
 }
 
 function waitStatus(url, status = SessionStatus.Initialized) {
-  let usingServerEvents = false;
   return new Promise((resolve, reject) => {
     const EvtSource = browser ? window.EventSource : EventSource;
     if (!EvtSource) {
@@ -233,7 +236,6 @@ function waitStatus(url, status = SessionStatus.Initialized) {
 
     const source = new EvtSource(`${url}/statusevents`);
     source.onmessage = e => {
-      usingServerEvents = true;
       source.close();
       resolve(e.data);
     };
@@ -243,12 +245,8 @@ function waitStatus(url, status = SessionStatus.Initialized) {
       reject(e);
     };
   }).catch((e) => {
-    if (!usingServerEvents) {
-      log('error in server sent event, falling back to polling');
-      return pollStatus(`${url}/status`, status);
-    } else {
-      throw e;
-    }
+    log('error in server sent event, falling back to polling', e);
+    return pollStatus(`${url}/status`, status);
   });
 }
 
@@ -264,11 +262,29 @@ function pollStatus(url, status = SessionStatus.Initialized) {
   });
 }
 
+const UserAgent = {
+  Desktop: 'Desktop',
+  Android: 'Android',
+  iOS: 'iOS',
+};
+
 function processOptions(o) {
   log('Options:', o);
   const options = Object.assign({}, optionsDefaults, o);
+
+  options.userAgent = detectUserAgent();
+  if (browser && !options.disableMobile && options.userAgent !== UserAgent.Desktop) {
+    if (options.method !== 'mobile')
+      log('On mobile; using method mobile instead of ' + options.method);
+    options.method = 'mobile';
+  }
+
   switch (options.method) {
     case 'url': break;
+    case 'mobile':
+      if (options.returnStatus !== SessionStatus.Done)
+        throw new Error('On mobile sessions, returnStatus must be Done');
+      break;
     case 'popup':
       if (!browser) throw new Error('Cannot use method popup in node');
       if (!(options.language in translations)) throw new Error('Unsupported language, currently supported: ' + Object.keys(translations).join(', '));
@@ -420,4 +436,41 @@ function getTranslatedString(id, lang) {
 
   if (res === undefined) return '';
   else return res;
+}
+
+function startMobileSession(qr, userAgent) {
+  const url = 'qr/json/' + encodeURIComponent(JSON.stringify(qr));
+  if (userAgent === UserAgent.Android) {
+    const intent = 'intent://' + url + '#Intent;package=org.irmacard.cardemu;scheme=cardemu;'
+      + 'l.timestamp=' + Date.now() + ';'
+      + 'S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dorg.irmacard.cardemu;end';
+    log('Navigating:', intent);
+    window.location.href = intent;
+  } else if (userAgent === UserAgent.iOS) {
+    log('Navigating:', 'irma://' + url);
+    window.location.href = 'irma://' + url;
+  }
+}
+
+function detectUserAgent() {
+  if (!browser)
+    return null;
+
+  // IE11 doesn't have window.navigator, test differently
+  // https://stackoverflow.com/questions/21825157/internet-explorer-11-detection
+  if (!!window.MSInputMethodContext && !!document.documentMode) {
+    log('Detected IE11');
+    return UserAgent.Desktop;
+  }
+  if (/Android/i.test(window.navigator.userAgent)) {
+    log('Detected Android');
+    return UserAgent.Android;
+  } else if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
+      // https://stackoverflow.com/questions/9038625/detect-if-device-is-ios
+    log('Detected iOS');
+    return UserAgent.iOS;
+  } else {
+      log('Neither Android nor iOS, assuming desktop');
+      return UserAgent.Desktop;
+  }
 }
