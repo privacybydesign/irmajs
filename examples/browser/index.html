@@ -42,7 +42,7 @@
 
         const server = document.getElementById('server').value;
         const authmethod = document.getElementById('method').value;
-        const key = document.getElementById(authmethod === 'rsa' ? 'key-pem' : 'key').value;
+        const key = document.getElementById(authmethod === 'publickey' ? 'key-pem' : 'key').value;
         const requestorname = document.getElementById('requestor').value;
 
         return irma.startSession(server, request, authmethod, key, requestorname)
@@ -100,7 +100,7 @@
             hideElements('key-pem-container', 'requestor-container');
             showElements('key-container');
             break;
-          case 'rsa':
+          case 'publickey':
             hideElements('key-container');
             showElements('key-pem-container', 'requestor-container');
             break;
@@ -162,7 +162,7 @@
         <option value="none">none</option>
         <option value="token">token</option>
         <option value="hmac">hmac</option>
-        <option value="rsa">rsa</option>
+        <option value="publickey">publickey</option>
       </select><br/>
       <div id="requestor-container" hidden>
           <label for="requestor" class="label">Requestor name:</label>

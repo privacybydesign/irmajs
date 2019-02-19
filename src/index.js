@@ -133,15 +133,15 @@ export function handleSession(qr, options = {}) {
  * Start an IRMA session at an irmaserver.
  * @param {string} server URL to irmaserver at which to start the session
  * @param {Object} request Session request
- * @param {string} method authentication method (supported: undefined, none, token, hmac, rsa)
+ * @param {string} method authentication method (supported: undefined, none, token, hmac, publickey)
  * @param {*} key API token or JWT key
- * @param {string} name name of the requestor, only for hmac and rsa mode
+ * @param {string} name name of the requestor, only for hmac and publickey mode
  */
 export function startSession(server, request, method, key, name) {
   return Promise.resolve()
     .then(() => {
       if (typeof(request) === 'object')
-        return method == 'rsa' || method == 'hmac' ? signSessionRequest(request, method, key, name) : JSON.stringify(request);
+        return method == 'publickey' || method == 'hmac' ? signSessionRequest(request, method, key, name) : JSON.stringify(request);
       else
         return request;
     })
@@ -155,7 +155,7 @@ export function startSession(server, request, method, key, name) {
           headers['Authorization'] = key;
           headers['Content-Type'] = 'application/json';
           break;
-        case 'rsa': case 'hmac':
+        case 'publickey': case 'hmac':
           headers['Content-Type'] = 'text/plain';
           break;
         default:
@@ -169,9 +169,9 @@ export function startSession(server, request, method, key, name) {
 /**
  * Sign a session request into a JWT, using the HMAC (HS256) or RSA (RS256) signing algorithm.
  * @param {Object} request Session request
- * @param {string} method authentication method (supported: undefined, none, token, hmac, rsa)
+ * @param {string} method authentication method (supported: undefined, none, token, hmac, publickey)
  * @param {*} key API token or JWT key
- * @param {string} name name of the requestor, only for hmac and rsa mode
+ * @param {string} name name of the requestor, only for hmac and publickey mode
  */
 export function signSessionRequest(request, method, key, name) {
   return import(/* webpackChunkName: "jwt" */ 'jsonwebtoken').then(jwt => {
@@ -187,12 +187,12 @@ export function signSessionRequest(request, method, key, name) {
 
     if (type !== 'disclosing' && type !== 'issuing' && type !== 'signing')
       throw new Error('Not an IRMA session request');
-    if (method !== 'rsa' && method !== 'hmac')
+    if (method !== 'publickey' && method !== 'hmac')
       throw new Error('Unsupported signing method');
 
     const subjects = { disclosing: 'verification_request', issuing: 'issue_request', signing: 'signature_request' };
     const fields = { disclosing: 'sprequest', issuing: 'iprequest', signing: 'absrequest' };
-    const algorithm = method === 'rsa' ? 'RS256' : 'HS256';
+    const algorithm = method === 'publickey' ? 'RS256' : 'HS256';
     const jwtOptions = { algorithm, issuer: name, subject: subjects[type] };
 
     return jwt.sign({[ fields[type] ] : rrequest}, key, jwtOptions);
