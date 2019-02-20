@@ -237,7 +237,7 @@ function waitStatus(url, status = SessionStatus.Initialized) {
     const source = new EvtSource(`${url}/statusevents`);
     source.onmessage = e => {
       source.close();
-      resolve(e.data);
+      resolve(JSON.parse(e.data));
     };
     source.onerror = e => {
       log('Received server event error', e);
