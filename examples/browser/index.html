@@ -22,7 +22,7 @@
             'label': label, 'attributes': [ attr ]
           }]
         };
-        doSession(request).then(result => showSuccess('Success, attribute value: <strong>' + result.Disclosed[0].rawvalue + '</strong>'));
+        doSession(request).then(result => showSuccess('Success, attribute value: <strong>' + result.disclosed[0].rawvalue + '</strong>'));
       }
 
       function doIssuanceSession() {
