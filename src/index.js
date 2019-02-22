@@ -26,6 +26,7 @@ const optionsDefaults = {
   showConnectedIcon: true,               // When method is 'popup' or 'canvas', replace QR with a phone icon when phone connects
   returnStatus:      SessionStatus.Done, // When the session reaches this status control is returned to the caller
   server:            '',                 // Server URL to fetch the session result from after the session is done
+  token:             '',                 // Session token at IRMA server (only required when server option is provided)
   resultJwt:         false,              // Retrieve signed session result from the irma server
   disableMobile:     false,              // Disable automatic navigation to IRMA app on mobile
 };
@@ -41,7 +42,6 @@ const optionsDefaults = {
  * @param {Object} options
  */
 export function handleSession(qr, options = {}) {
-  const token = qr.u.split('/').pop();
   let state = { qr, done: false };
 
   // When we start the session is always in the Initialized state, but the state at which
@@ -113,7 +113,7 @@ export function handleSession(qr, options = {}) {
         state.done = true;
         return status;
       }
-      return fetchCheck(`${state.options.server}/session/${token}/${ state.options.resultJwt ? 'result-jwt' : 'result' }`);
+      return fetchCheck(`${state.options.server}/session/${state.options.token}/${ state.options.resultJwt ? 'result-jwt' : 'result' }`);
     })
 
     // 4th phase: handle session result received from irmaserver
@@ -306,6 +306,8 @@ function processOptions(o) {
     throw new Error('server must be a string (URL)');
   if (options.server.length > 0 && options.returnStatus !== SessionStatus.Done)
     throw new Error('If server option is used, returnStatus option must be SessionStatus.Done');
+  if (options.server.length > 0 && (typeof(options.token) !== 'string' || options.token.length === 0))
+    throw new Error('if server option is used, providing token option is required');
   if (options.resultJwt && options.server.length === 0)
     throw new Error('resultJwt option was enabled but no server to retrieve result from was provided');
   return options;

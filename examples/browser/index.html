@@ -46,7 +46,7 @@
         const requestorname = document.getElementById('requestor').value;
 
         return irma.startSession(server, request, authmethod, key, requestorname)
-          .then(qr => irma.handleSession(qr, {server, method: 'popup', language: 'en'}))
+          .then(pkg => irma.handleSession(pkg.sessionPtr, {server, token: pkg.token, method: 'popup', language: 'en'}))
           .then(result => {
             console.log('Done', result);
             return result;

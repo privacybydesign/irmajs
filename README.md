@@ -22,16 +22,16 @@ If you have included `irma.js` (e.g. `<script src="irma.js" defer></script>`) yo
 const request = {
     'type': 'disclosing',
     'content': [{
-        'label': 'Over 21',
+        'label': 'Over 18',
         'attributes': [ 'irma-demo.MijnOverheid.ageLower.over18' ]
     }]
 };
 
-irma.startSession(urlToServer, request)
-    .then(qr => irma.handleSession(server, qr, {method: 'popup', language: 'en'}))
+irma.startSession(server, request)
+    .then(({ sessionPtr, token }) => irma.handleSession(sessionPtr, {server, token}))
     .then(result => console.log('Done', result));
 ```
 
-This assumes you have an `irma server` listening at `urlToServer` that accepts unauthenticated requests.
+This assumes you have an `irma server` that is configured to accept unauthenticated session requests listening at the URL indicated by `server`.
 
 For complete examples, see the `examples` folder.
