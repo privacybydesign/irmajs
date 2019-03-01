@@ -1,4 +1,5 @@
 require('es6-promise').polyfill();
+require('es6-object-assign').polyfill();
 const browser = typeof(window) !== 'undefined';
 const qrcodeterminal = !browser ? require('qrcode-terminal') : undefined;
 const EventSource = !browser ? require('eventsource') : undefined;
