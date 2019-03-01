@@ -22,7 +22,7 @@
             'label': label, 'attributes': [ attr ]
           }]
         };
-        doSession(request).then(result => showSuccess('Success, attribute value: <strong>' + result.disclosed[0].rawvalue + '</strong>'));
+        doSession(request).then(function(result) { showSuccess('Success, attribute value: <strong>' + result.disclosed[0].rawvalue + '</strong>'); });
       }
 
       function doIssuanceSession() {
@@ -33,7 +33,7 @@
             'credential': 'irma-demo.MijnOverheid.ageLower',
             'attributes': { 'over12': attrs[0], 'over16': attrs[1], 'over18': attrs[2], 'over21': attrs[3] }
           }]
-        }).then(() => showSuccess('Success'));
+        }).then(function(result) { showSuccess('Success'); });
       }
 
       function doSession(request) {
@@ -46,12 +46,12 @@
         const requestorname = document.getElementById('requestor').value;
 
         return irma.startSession(server, request, authmethod, key, requestorname)
-          .then(pkg => irma.handleSession(pkg.sessionPtr, {server, token: pkg.token, method: 'popup', language: 'en'}))
-          .then(result => {
+          .then(function(pkg) { return irma.handleSession(pkg.sessionPtr, {server: server, token: pkg.token, method: 'popup', language: 'en'}); })
+          .then(function(result) {
             console.log('Done', result);
             return result;
           })
-          .catch(err => showError(err));
+          .catch(function(err) { showError(err); });
       }
 
       window.onload = function() {
@@ -106,11 +106,11 @@
             break;
         }
       }
-      function hideElements(...els) {
-        for (const el of els) document.getElementById(el).setAttribute('hidden', 'true');
+      function hideElements() {
+        for (let i=0; i < arguments.length; i++) document.getElementById(arguments[i]).setAttribute('hidden', 'true');
       }
-      function showElements(...els) {
-        for (const el of els) document.getElementById(el).removeAttribute('hidden');
+      function showElements() {
+        for (let i=0; i < arguments.length; i++) document.getElementById(arguments[i]).removeAttribute('hidden');
       }
     </script>
   </head>
