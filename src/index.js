@@ -232,7 +232,8 @@ function waitStatus(url, status = SessionStatus.Initialized) {
     const EvtSource = browser ? window.EventSource : EventSource;
     if (!EvtSource) {
       log('No support for EventSource, fallback to polling');
-      return pollStatus(`${url}/status`, status);
+      poller(`${url}/status`, status, resolve, reject);
+      return;
     }
 
     const source = new EvtSource(`${url}/statusevents`);
@@ -252,16 +253,15 @@ function waitStatus(url, status = SessionStatus.Initialized) {
 }
 
 function pollStatus(url, status = SessionStatus.Initialized) {
-  return new Promise((resolve, reject) => {
-    const poller = (status, resolve) => {
-      fetchCheck(url)
-        .then((response) => response.json())
-        .then((text) => text !== status ? resolve(text) : setTimeout(poller, 500, status, resolve))
-        .catch((err) => reject(err));
-    };
-    poller(status, resolve);
-  });
+  return new Promise((resolve, reject) => poller(url, status, resolve, reject));
 }
+
+const poller = (url, status, resolve, reject) => {
+  return fetchCheck(url)
+    .then((response) => response.json())
+    .then((text) => text !== status ? resolve(text) : setTimeout(poller, 500, url, status, resolve, reject))
+    .catch((err) => reject(err));
+};
 
 const UserAgent = {
   Desktop: 'Desktop',
