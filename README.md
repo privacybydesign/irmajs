@@ -1,16 +1,22 @@
 # irmajs
 
-`irmajs` is a Javascript client of the RESTful JSON API offered by the [`irma server`](https://github.com/privacybydesign/irmago/tree/master/irma). It  allows you to use the `irma server` to:
+`irmajs` is a Javascript client of the RESTful JSON API offered by the [`irma server`](https://github.com/privacybydesign/irmago/tree/master/irma). It allows you to use the `irma server` to:
 
  * Verify IRMA attributes. You specify which attributes, the library handles the user interaction and the communication with the `irma server` and the [IRMA app](https://github.com/privacybydesign/irma_mobile)).
  * Issue IRMA attributes.
  * Create IMRA attribute-based signatures: signature on a string to which IRMA attributes are verifiably attached.
 
+`irmajs` supports all major browsers (Firefox, Chrome, Safari, Edge, Internet Explorer 11).
+
+## Documentation
+
+Technical documentation of `irmajs` can be found at [irma.app/docs](https://irma.app/docs/irmajs).
+
 ## Building
 
 Compile the library:
 
-    npm build
+    npm run build
 
 This writes `irma.js` to the `dist` folder, which you can include in your website in a `<script>` tag
 
