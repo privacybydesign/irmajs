@@ -236,18 +236,27 @@ function waitStatus(url, status = SessionStatus.Initialized) {
       return;
     }
 
+    // The EventSource.onopen Javascript callback is not consistently called across browsers (Chrome yes, Firefox+Safari no),
+    // but the irmaserver manually sends an "open" event 200 ms after establishing the SSE connection.
+    // Cancel and fallback to polling if we don't get that signal (e.g. due to a reverse proxy breaking SSE).
     const source = new EvtSource(`${url}/statusevents`);
+    const canceller = setTimeout(() => reject('no open message received'), 500);
+    source.onopen = () => {
+      clearTimeout(canceller);
+    };
     source.onmessage = e => {
+      clearTimeout(canceller);
       source.close();
       resolve(JSON.parse(e.data));
     };
     source.onerror = e => {
+      clearTimeout(canceller);
       log('Received server event error', e);
       source.close();
       reject(e);
     };
   }).catch((e) => {
-    log('error in server sent event, falling back to polling', e);
+    log('error in server sent event, falling back to polling:', e);
     return pollStatus(`${url}/status`, status);
   });
 }
