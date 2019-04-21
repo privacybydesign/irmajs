@@ -272,7 +272,7 @@ const poller = (url, status, resolve, reject) => {
     .catch((err) => reject(err));
 };
 
-const UserAgent = {
+export const UserAgent = {
   Desktop: 'Desktop',
   Android: 'Android',
   iOS: 'iOS',
@@ -464,7 +464,7 @@ function startMobileSession(qr, userAgent) {
   }
 }
 
-function detectUserAgent() {
+export function detectUserAgent() {
   if (!browser)
     return null;
 
