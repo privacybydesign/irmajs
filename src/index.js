@@ -43,7 +43,14 @@ const optionsDefaults = {
  * @param {Object} options
  */
 export function handleSession(qr, options = {}) {
-  let state = { qr, done: false };
+  let state = {};
+  return setupSession(qr, state, options)
+         .then((p) => finishSession(p, state));
+}
+
+export function setupSession(qr, state, options) {
+  state.qr = qr;
+  state.done = false;
 
   // When we start the session is always in the Initialized state, but the state at which
   // we return control to the caller depends on the options. See the function comment.
@@ -80,11 +87,15 @@ export function handleSession(qr, options = {}) {
         state.done = true;
         return SessionStatus.Initialized;
       }
-      return waitConnected(state.qr.u);
-    })
 
+      return waitConnected(state.qr.u);
+    });
+}
+
+export function finishSession(status, state) {
+  return Promise.resolve()
     // 2nd phase: phone connected
-    .then((status) => {
+    .then(() => {
       if (state.done) return status;
 
       log('Session state changed', status, state.qr.u);
