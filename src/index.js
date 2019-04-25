@@ -45,7 +45,7 @@ const optionsDefaults = {
 export function handleSession(qr, options = {}) {
   let state = {};
   return setupSession(qr, state, options)
-         .then((p) => finishSession(p, state));
+    .then((p) => finishSession(p, state));
 }
 
 export function setupSession(qr, state, options) {
