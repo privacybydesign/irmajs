@@ -35,6 +35,14 @@ const optionsDefaults = {
   qrterminalDisplay: console.log,        // Display function for qrcode-terminal
 };
 
+var logEnabled = true;
+/**
+ * Change whether or not the irmajs library logs to console.
+ */
+export function setLoggingState(enabled) {
+	logEnabled = enabled;
+}
+
 /**
  * Handle an IRMA session after it has been created at an irma server, given the QR contents
  * to be sent to the IRMA app. This function can (1) draw an IRMA QR, (2) wait for the phone to
@@ -433,11 +441,13 @@ function ensurePopupInitialized() {
 }
 
 function log() {
-  console.log.apply(console, arguments); // eslint-disable-line no-console
+	if (logEnabled)
+    console.log.apply(console, arguments); // eslint-disable-line no-console
 }
 
 function warn() {
-  console.warn.apply(console, arguments); // eslint-disable-line no-console
+  if (logEnabled)
+    console.warn.apply(console, arguments); // eslint-disable-line no-console
 }
 
 const sessionTypeMap = {
