@@ -89,6 +89,12 @@ export function setupSession(qr, state, options) {
       }
 
       return waitConnected(state.qr.u);
+    })
+
+    .catch((err) => {
+      log('Error or unexpected status', err);
+      if (state.method === 'popup') closePopup();
+      throw err;
     });
 }
 
