@@ -146,8 +146,10 @@ export function finishSession(status, state) {
         state.done = true;
         return status;
       }
+
       let jwtType = state.options.legacyResultJwt ? 'getproof' : 'result-jwt';
-      return fetchCheck(`${state.options.server}/session/${state.options.token}/${ state.options.resultJwt ? jwtType : 'result' }`);
+      let endpoint = state.options.resultJwt || state.options.legacyResultJwt ? jwtType : 'result';
+      return fetchCheck(`${state.options.server}/session/${state.options.token}/${ endpoint }`);
     })
 
     // 4th phase: handle session result received from irmaserver
