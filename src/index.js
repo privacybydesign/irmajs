@@ -36,11 +36,12 @@ const optionsDefaults = {
 };
 
 var logEnabled = true;
+
 /**
  * Change whether or not the irmajs library logs to console.
  */
 export function setLoggingState(enabled) {
-	logEnabled = enabled;
+  logEnabled = enabled;
 }
 
 /**
@@ -441,7 +442,7 @@ function ensurePopupInitialized() {
 }
 
 function log() {
-	if (logEnabled)
+  if (logEnabled)
     console.log.apply(console, arguments); // eslint-disable-line no-console
 }
 
