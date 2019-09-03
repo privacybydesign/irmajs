@@ -29,6 +29,7 @@ const optionsDefaults = {
   server:            '',                 // Server URL to fetch the session result from after the session is done
   token:             '',                 // Session token at IRMA server (only required when server option is provided)
   resultJwt:         false,              // Retrieve signed session result from the irma server
+  legacy:            false,              // Retrieve legacy JWT format (getproof) instead of new IRMA server JWT format
   disableMobile:     false,              // Disable automatic navigation to IRMA app on mobile
 };
 
@@ -131,7 +132,8 @@ export function finishSession(status, state) {
         state.done = true;
         return status;
       }
-      return fetchCheck(`${state.options.server}/session/${state.options.token}/${ state.options.resultJwt ? 'result-jwt' : 'result' }`);
+      let jwtType = state.options.legacy ? 'getproof' : 'result-jwt';
+      return fetchCheck(`${state.options.server}/session/${state.options.token}/${ state.options.resultJwt ? jwtType : 'result' }`);
     })
 
     // 4th phase: handle session result received from irmaserver
