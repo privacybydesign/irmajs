@@ -21,17 +21,17 @@ export const SessionStatus = {
 };
 
 const optionsDefaults = {
-  method:            'popup',             // Supported methods: 'popup', 'canvas', 'mobile' (only browser), 'console' (only node), 'url' (both)
-  element:           'irmaqr',            // ID of the canvas to draw to if method === 'canvas'
-  language:          'en',                // Popup language when method === 'popup'
-  showConnectedIcon: true,                // When method is 'popup' or 'canvas', replace QR with a phone icon when phone connects
-  returnStatus:      SessionStatus.Done,  // When the session reaches this status control is returned to the caller
-  server:            '',                  // Server URL to fetch the session result from after the session is done
-  token:             '',                  // Session token at IRMA server (only required when server option is provided)
-  resultJwt:         false,               // Retrieve signed session result from the irma server
-  disableMobile:     false,               // Disable automatic navigation to IRMA app on mobile
-  qrterminalOptions: {},                  // Options to pass to qrcode-terminal.generate
-  qrterminalDisplay: qr=>console.log(qr), // Display function for qrcode-terminal
+  method:            'popup',            // Supported methods: 'popup', 'canvas', 'mobile' (only browser), 'console' (only node), 'url' (both)
+  element:           'irmaqr',           // ID of the canvas to draw to if method === 'canvas'
+  language:          'en',               // Popup language when method === 'popup'
+  showConnectedIcon: true,               // When method is 'popup' or 'canvas', replace QR with a phone icon when phone connects
+  returnStatus:      SessionStatus.Done, // When the session reaches this status control is returned to the caller
+  server:            '',                 // Server URL to fetch the session result from after the session is done
+  token:             '',                 // Session token at IRMA server (only required when server option is provided)
+  resultJwt:         false,              // Retrieve signed session result from the irma server
+  disableMobile:     false,              // Disable automatic navigation to IRMA app on mobile
+  qrterminalOptions: {},                 // Options to pass to qrcode-terminal.generate
+  qrterminalDisplay: console.log,        // Display function for qrcode-terminal
 };
 
 /**
