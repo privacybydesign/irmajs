@@ -31,6 +31,8 @@ const optionsDefaults = {
   resultJwt:         false,              // Retrieve signed session result from the irma server
   legacyResultJwt:   false,              // Retrieve legacy (i.e. irma_api_server compatible from /getproof) JWT format
   disableMobile:     false,              // Disable automatic navigation to IRMA app on mobile
+  qrterminalOptions: {},                 // Options to pass to qrcode-terminal.generate
+  qrterminalDisplay: console.log,        // Display function for qrcode-terminal
 };
 
 /**
@@ -80,7 +82,10 @@ export function setupSession(qr, state, options) {
           drawQr(state.canvas, state.qr);
           break;
         case 'console':
-          qrcodeterminal.generate(JSON.stringify(state.qr));
+          qrcodeterminal.generate(
+            JSON.stringify(state.qr),
+            state.options.qrterminalOptions,
+            state.options.qrterminalDisplay);
           break;
       }
 
