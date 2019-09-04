@@ -1,6 +1,6 @@
 {
   "name": "@privacybydesign/irmajs",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "",
   "main": "dist/irma.node.js",
   "browser": "dist/irma.js",
