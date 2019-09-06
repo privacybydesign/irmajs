@@ -10,25 +10,32 @@
         const attr = document.getElementById('attr').value;
         const label = document.getElementById('label').value;
         const message = document.getElementById('message').value;
+        const labelRequest = !label ? {} : {'labels': {'0': {'en': label, 'nl': label}}};
         const request = !message ? {
-          'type': 'disclosing',
-          'content': [{
-            'label': label, 'attributes': [ attr ]
-          }]
+          '@context': 'https://irma.app/ld/request/disclosure/v2',
+          'disclose': [
+            [
+              [ attr ]
+            ]
+          ],
+          ...labelRequest
         } : {
-          'type': 'signing',
+          '@context': 'https://irma.app/ld/request/signature/v2',
           'message': message,
-          'content': [{
-            'label': label, 'attributes': [ attr ]
-          }]
+          'disclose': [
+            [
+              [ attr ]
+            ]
+          ],
+          ...labelRequest
         };
-        doSession(request).then(function(result) { showSuccess('Success, attribute value: <strong>' + result.disclosed[0].rawvalue + '</strong>'); });
+        doSession(request).then(function(result) { showSuccess('Success, attribute value: <strong>' + result.disclosed[0][0].rawvalue + '</strong>'); });
       }
 
       function doIssuanceSession() {
         const attrs = document.getElementById('newattrs').value.split(',');
         doSession({
-          'type': 'issuing',
+          '@context': 'https://irma.app/ld/request/issuance/v2',
           'credentials': [{
             'credential': 'irma-demo.MijnOverheid.ageLower',
             'attributes': { 'over12': attrs[0], 'over16': attrs[1], 'over18': attrs[2], 'over21': attrs[3] }
@@ -145,12 +152,12 @@
       <h2>Demo 2: attribute verification</h2>
       <p>
           This will verify an IRMA attribute. You can look up attributes that can be verified in the <a href="https://privacybydesign.foundation/attribute-index/en/">IRMA attribute index</a>.
-          If you include a message, then that message will be signed with an attribute-based signature.
+          A label can optionally be included to clarify your attribute request to the user. When you also include a message, then that message will be signed with an attribute-based signature.
       </p>
       <label for="attr" class="label">Attribute:</label>
       <input id="attr" type="text" value="irma-demo.MijnOverheid.ageLower.over18"><br/>
       <label for="label" class="label">Label:</label>
-      <input id="label" type="text" value="Over 18"><br/>
+      <input id="label" type="text"><br/>
       <label for="message" class="label">Message:</label>
       <input id="message" type="text"><br/>
       <button id="verification">Verify attribute</button>

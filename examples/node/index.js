@@ -2,11 +2,12 @@ const irma = require('@privacybydesign/irmajs');
 
 const server = 'http://localhost:8088';
 const request = {
-  'type': 'disclosing',
-  'content': [{
-    'label': 'Over 18',
-    'attributes': [ 'irma-demo.MijnOverheid.ageLower.over18' ]
-  }]
+  '@context': 'https://irma.app/ld/request/disclosure/v2',
+  'disclose': [
+    [
+      [ 'irma-demo.MijnOverheid.ageLower.over18' ]
+    ]
+  ]
 };
 
 irma.startSession(server, request)
