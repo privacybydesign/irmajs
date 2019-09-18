@@ -5,7 +5,8 @@
   "main": "dist/irma.node.js",
   "scripts": {
     "develop": "webpack --mode development --watch",
-    "build": "webpack --mode production"
+    "build": "webpack --mode production",
+    "lint": "eslint \"src/**/*.js\""
   },
   "keywords": [],
   "contributors": [
