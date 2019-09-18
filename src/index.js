@@ -20,6 +20,7 @@ export const SessionStatus = {
   Timeout    : 'TIMEOUT',     // Session timed out
 };
 
+/* eslint-disable no-console */
 const optionsDefaults = {
   method:            'popup',            // Supported methods: 'popup', 'canvas', 'mobile' (only browser), 'console' (only node), 'url' (both)
   element:           'irmaqr',           // ID of the canvas to draw to if method === 'canvas'
@@ -34,8 +35,9 @@ const optionsDefaults = {
   qrterminalOptions: {},                 // Options to pass to qrcode-terminal.generate
   qrterminalDisplay: console.log,        // Display function for qrcode-terminal
 };
+/* eslint-enable no-console */
 
-var logEnabled = true;
+let logEnabled = true;
 
 /**
  * Change whether or not the irmajs library logs to console.
@@ -55,7 +57,7 @@ export function setLoggingState(enabled) {
  * @param {Object} options
  */
 export function handleSession(qr, options = {}) {
-  let state = {};
+  const state = {};
   return setupSession(qr, state, options)
     .then((p) => finishSession(p, state));
 }
@@ -147,8 +149,8 @@ export function finishSession(status, state) {
         return status;
       }
 
-      let jwtType = state.options.legacyResultJwt ? 'getproof' : 'result-jwt';
-      let endpoint = state.options.resultJwt || state.options.legacyResultJwt ? jwtType : 'result';
+      const jwtType = state.options.legacyResultJwt ? 'getproof' : 'result-jwt';
+      const endpoint = state.options.resultJwt || state.options.legacyResultJwt ? jwtType : 'result';
       return fetchCheck(`${state.options.server}/session/${state.options.token}/${ endpoint }`);
     })
 
@@ -470,16 +472,16 @@ function translatePopupElement(el, id, lang) {
 }
 
 function getTranslatedString(id, lang) {
-  var parts = id.split('.');
-  var res = translations[lang];
-  for (var part in parts) {
+  const parts = id.split('.');
+  let res = translations[lang];
+  for (const part in parts) {
       if (res === undefined) break;
       res = res[parts[part]];
   }
 
   if (res === undefined) {
       res = translations[optionsDefaults.language];
-      for (part in parts) {
+      for (const part in parts) {
           if (res === undefined) break;
           res = res[parts[part]];
       }
