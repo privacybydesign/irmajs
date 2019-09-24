@@ -3,6 +3,7 @@
   "version": "0.1.4",
   "description": "",
   "main": "dist/irma.node.js",
+  "browser": "dist/irma.js",
   "scripts": {
     "develop": "webpack --mode development --watch",
     "build": "webpack --mode production",
