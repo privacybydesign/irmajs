@@ -415,6 +415,7 @@ function setupPopup(qr, language) {
     // which we don't want to have to keep track of outside of setupPopup(), so we do the removing
     // of the listener here inside the listener itself.
     cancelbtn.removeEventListener('click', del);
+    closePopup();
   });
 }
 
