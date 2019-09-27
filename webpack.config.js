@@ -22,6 +22,7 @@ const clientConfig = {
     filename: 'irma.js',
     chunkFilename: '[name].js',
     library: 'irma',
+    libraryTarget: 'umd',
     path: path.resolve(__dirname, 'dist')
   },
   module: {
@@ -41,7 +42,7 @@ const clientConfig = {
     ])
   },
   externals: {
-    eventsource: 'EventSource',
+    eventsource: 'eventsource',
     'qrcode-terminal': 'qrcode'
   }
 };
