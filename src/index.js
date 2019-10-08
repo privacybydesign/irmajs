@@ -131,9 +131,9 @@ export function finishSession(status, state) {
           break;
       }
 
-      if (state.options.returnStatus === SessionStatus.Connected) {
+      if (state.options.returnStatus === SessionStatus.Connected || state.options.returnStatus === SessionStatus.Done) {
         state.done = true;
-        return SessionStatus.Connected;
+        return status;
       }
       return waitDone(state.qr.u);
     })
@@ -238,21 +238,23 @@ export function signSessionRequest(request, method, key, name) {
 }
 
 /**
- * Poll the status URL of an IRMA server library until it indicates that
- * the IRMA app has connected to it (or that the session is cancelled).
+ * Poll the status URL of an IRMA server until it indicates that
+ * the status is no longer Initialized, i.e. Connected or Done. Rejects
+ * on other states (Cancelled, Timeout).
  * @param {string} url
  */
 export function waitConnected(url) {
   return waitStatus(url, SessionStatus.Initialized)
     .then((status) => {
-      if (status !== SessionStatus.Connected)
+      if (status !== SessionStatus.Connected && status !== SessionStatus.Done)
         return Promise.reject(status);
       return status;
     });
 }
 
 /**
- * Poll the status URL of an IRMA server library until it indicates that the session is done.
+ * Poll the status URL of an IRMA server until it indicates that the status
+ * has changed from Connected to Done. Rejects on any other state.
  * @param {string} url
  */
 export function waitDone(url) {
