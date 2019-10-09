@@ -131,7 +131,7 @@ export function finishSession(status, state) {
           break;
       }
 
-      if (state.options.returnStatus === SessionStatus.Connected || state.options.returnStatus === SessionStatus.Done) {
+      if (state.options.returnStatus === SessionStatus.Connected) {
         state.done = true;
         return status;
       }
