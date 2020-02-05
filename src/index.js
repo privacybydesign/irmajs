@@ -50,7 +50,7 @@ export function setLoggingState(enabled) {
  * Handle an IRMA session after it has been created at an irma server, given the QR contents
  * to be sent to the IRMA app. This function can (1) draw an IRMA QR, (2) wait for the phone to
  * connect, (3) wait for the session to complete, and (4) retrieve the session result afterwards
- * from the irma server. 
+ * from the irma server.
  * Returns a promise that can return at any of these phases, depending on the options.
  * Compatible with both `irma server` cli and Go `irmaserver` library.
  * @param {Object} qr
@@ -213,27 +213,32 @@ export function startSession(server, request, method, key, name) {
  */
 export function signSessionRequest(request, method, key, name) {
   return import(/* webpackChunkName: "jwt" */ 'jsonwebtoken').then(jwt => {
-    let type;
     let rrequest;
-    if (request.type) {
-      type = request.type;
+    if (request.type || request['@context']) {
       rrequest = { request };
     } else if (request.request) {
-      type = request.request.type;
       rrequest = request;
     }
 
-    if (type !== 'disclosing' && type !== 'issuing' && type !== 'signing')
+    const subjects = { disclosing: 'verification_request', issuing: 'issue_request', signing: 'signature_request' };
+    const subjectsContext = {
+      'https://irma.app/ld/request/disclosure/v2': 'verification_request',
+      'https://irma.app/ld/request/signature/v2' : 'signature_request',
+      'https://irma.app/ld/request/issuance/v2'  : 'issue_request',
+    };
+
+    if (!subjects[rrequest.request.type] && !subjectsContext[rrequest.request['@context']])
       throw new Error('Not an IRMA session request');
     if (method !== 'publickey' && method !== 'hmac')
       throw new Error('Unsupported signing method');
 
-    const subjects = { disclosing: 'verification_request', issuing: 'issue_request', signing: 'signature_request' };
-    const fields = { disclosing: 'sprequest', issuing: 'iprequest', signing: 'absrequest' };
+    const fields = { 'verification_request': 'sprequest', 'issue_request': 'iprequest', 'signature_request': 'absrequest' };
     const algorithm = method === 'publickey' ? 'RS256' : 'HS256';
-    const jwtOptions = { algorithm, issuer: name, subject: subjects[type] };
+    const jwtOptions = { algorithm, issuer: name,
+      subject: subjects[rrequest.request.type] || subjectsContext[rrequest.request['@context']]
+    };
 
-    return jwt.sign({[ fields[type] ] : rrequest}, key, jwtOptions);
+    return jwt.sign({[ fields[jwtOptions.subject] ] : rrequest}, key, jwtOptions);
   });
 }
 
