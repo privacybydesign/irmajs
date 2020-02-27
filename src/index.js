@@ -6,9 +6,11 @@ const EventSource = !browser ? require('eventsource') : undefined;
 
 import fetch from 'isomorphic-fetch';
 import QRCode from 'qrcode';
+import kjua from 'kjua';
 
 import './irma.scss';
 import phonePng from './phone.png';
+import logoPng from './irma.png';
 import popupHtml from './popup.html';
 import translations from './translations';
 
@@ -88,13 +90,32 @@ export function setupSession(qr, state, options) {
           setupPopup(qr, state.options.language);
           // fallthrough
         case 'canvas':
-          state.canvas = window.document.getElementById(state.options.element);
-          if (!state.canvas) return Promise.reject('Specified canvas not found in DOM');
-          drawQr(state.canvas, state.qr);
+          const canvasContainer = window.document.getElementById(state.options.element);
+          if (!canvasContainer) return Promise.reject('Specified canvas container not found in DOM');
+
+          // Draw the QR once the image has been loaded
+          const logoImageElement = document.createElement('img');
+          logoImageElement.src = logoPng;
+
+          const doDrawQr = () => {
+            state.canvas = drawQr(
+              canvasContainer,
+              `https://irma.app/-pilot/session#${JSON.stringify(state.qr)}`,
+              logoImageElement,
+            );
+          }
+          
+          // TODO: This might not be necessary
+          if(!logoImageElement.complete) {
+            logoImageElement.onload = doDrawQr;
+          } else {
+            doDrawQr();
+          }
+
           break;
         case 'console':
           qrcodeterminal.generate(
-            JSON.stringify(state.qr),
+            state.qr,
             state.options.qrterminalOptions,
             state.options.qrterminalDisplay);
           break;
@@ -385,12 +406,19 @@ function fetchCheck() {
     .then(handleFetchErrors);
 }
 
-function drawQr(canvas, qr) {
-  QRCode.toCanvas(canvas,
-    JSON.stringify(qr),
-    {width: '230', margin: '1'},
-    (error) => { if (error) throw error; }
-  );
+function drawQr(canvasContainer, text, logoImageElement) {
+  const el = kjua({
+    text: text,
+    render: 'canvas',
+    mode: 'image',
+    image: logoImageElement,
+    ecLevel: 'M',
+    rounded: 50,
+  });
+
+  canvasContainer.innerHTML = '';
+  canvasContainer.appendChild(el);
+  return el;
 }
 
 function clearQr(canvas, showConnectedIcon) {

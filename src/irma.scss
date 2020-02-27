@@ -10,7 +10,7 @@
   backface-visibility: hidden;
   transform: translateX(-50%) translateY(-50%);
 
-  #modal-irmaqr {
+  #modal-irmaqr canvas {
     width: 230px;
     height: 230px;
   }
@@ -92,7 +92,7 @@
     margin: 30px auto;
   }
 
-  .irma-option-box {
+  .irma-option-container canvas {
     width: 230px;
     height: 230px;
     box-sizing: content-box;
