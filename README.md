@@ -1,3 +1,6 @@
+_This repository is deprecated and therefore not maintained anymore. Please use one of the [`irma-frontend-packages`](https://github.com/privacybydesign/irma-frontend-packages)
+instead. A legacy wrapper for backwards compatibilty with irmajs can be found [here](https://github.com/privacybydesign/irma-frontend-packages/tree/master/irma-legacy)._
+
 # irmajs
 
 `irmajs` is a Javascript client of the RESTful JSON API offered by the [`irma server`](https://github.com/privacybydesign/irmago/tree/master/irma). It allows you to use the `irma server` to:
