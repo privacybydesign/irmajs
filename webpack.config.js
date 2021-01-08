@@ -1,77 +1,80 @@
 const path = require('path');
 const nodeExternals = require('webpack-node-externals');
 
-const sharedRules = [
-  {
-    test: /\.js$/,
-    exclude: /(node_modules|bower_components)/,
-    use: {
-      loader: 'babel-loader',
-      options: {
-        presets: ['@babel/preset-env'],
-        plugins: ['@babel/plugin-proposal-object-rest-spread', '@babel/plugin-syntax-dynamic-import']
-      }
-    }
-  },
-];
+const clientRules = {
+    entry: [
+        'core-js/modules/es.promise',
+        'core-js/modules/es.array.iterator',
+        'core-js/modules/es.array.includes',
+        './index.js',
+    ],
 
-const clientConfig = {
-  target: 'web',
-  entry: './src/index.js',
-  output: {
-    filename: 'irma.js',
-    chunkFilename: '[name].js',
-    library: 'irma',
-    libraryTarget: 'umd',
-    path: path.resolve(__dirname, 'dist')
-  },
-  module: {
-    rules: sharedRules.concat([
-      {
-        test: /\.scss$/,
-        use: ['style-loader', 'css-loader', 'sass-loader']
-      },
-      {
-        test: /\.(png|svg|jpg|gif)$/,
-        use: 'url-loader'
-      },
-      {
-        test: /\.html$/,
-        use: 'html-loader'
-      }
-    ])
-  },
-  externals: {
-    eventsource: 'eventsource',
-    'qrcode-terminal': 'qrcode'
-  }
+    output: {
+        path: path.join(__dirname, 'dist'),
+        filename: 'irma.js',
+        chunkFilename: '[name].js',
+        library: 'irma',
+        libraryTarget: 'umd',
+    },
+
+    module: {
+        rules: [
+            {
+                test: /\.css$/i,
+                use: [
+                    'style-loader',
+                    'css-loader',
+                ]
+            }, {
+                test: /\.js$/i,
+                exclude: /(qrcode-terminal)/,
+                use: {
+                    loader: 'babel-loader',
+                    options: {
+                        'presets': [
+                            [
+                                '@babel/preset-env',
+                                {
+                                    'targets': '> 0.25%, not dead',
+                                    'useBuiltIns': 'entry',
+                                    'corejs': { 'version': 3, 'proposals': true },
+                                },
+                            ],
+                        ],
+                    },
+                },
+            },
+        ],
+    },
 };
 
-const serverConfig = {
-  target: 'node',
-  entry: './src/index.js',
-  output: {
-    filename: 'irma.node.js',
-    libraryTarget: 'commonjs',
-    path: path.resolve(__dirname, 'dist')
-  },
-  module: {
-    rules: sharedRules.concat([
-      {
-        test: /\.scss$/,
-        use: 'null-loader'
-      },
-      {
-        test: /\.(png|svg|jpg|gif)$/,
-        use: 'null-loader'
-      },
-      {
-        test: /\.html$/,
-        use: 'null-loader'
-      }
-    ])
-  },
-  externals: [nodeExternals()],
+const serverRules = {
+    target: 'node',
+
+    entry: './index.js',
+
+    output: {
+        path: path.join(__dirname, 'dist'),
+        filename: 'irma.node.js',
+        libraryTarget: 'commonjs',
+    },
+
+    module: {
+        rules: [
+            {
+                test: /\.css$/i,
+                loader: 'null-loader'
+            },
+            {
+                test: /irma-popup/,
+                loader: 'null-loader'
+            }
+        ]
+    },
+
+    externals: [nodeExternals({
+        whitelist: [/\.css$/i, /irma-popup/]
+    })],
 };
 
-module.exports = [ clientConfig, serverConfig ];
+module.exports = [clientRules, serverRules];
