@@ -1,0 +1,18 @@
+image: privacybydesign/node_yarn:latest
+
+stages:
+  - build
+
+before_script:
+  - set -euxo pipefail
+
+bundle:
+  stage: build
+  artifacts:
+    # Disabling artifact expiry is not supported yet, so make
+    expire_in: 10 year
+    paths:
+      - dist/*
+  script:
+    - npm install
+    - npm run release
