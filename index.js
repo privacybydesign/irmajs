@@ -1,10 +1,11 @@
-const IrmaCore      = require('@privacybydesign/irma-core');
-const Client        = require('@privacybydesign/irma-client');
-const ServerSession = require('@privacybydesign/irma-client/server-session');
-const ServerState   = require('@privacybydesign/irma-client/server-state');
-const Console       = require('@privacybydesign/irma-console');
-const Popup         = require('@privacybydesign/irma-popup');
-const QRCode        = require('qrcode');
+const IrmaCore = require('@privacybydesign/irma-core');
+const Client   = require('@privacybydesign/irma-client');
+const Console  = require('@privacybydesign/irma-console');
+const Popup    = require('@privacybydesign/irma-popup');
+const QRCode   = require('qrcode');
+
+const StatusListener    = require('@privacybydesign/irma-client/status-listener');
+const SessionManagement = require('@privacybydesign/irma-client/session-management');
 
 const browser = typeof(window) !== 'undefined';
 
@@ -72,6 +73,9 @@ function handleSession(qr, options = {}) {
         },
         result: false,
       },
+      state: {
+        pairing: false,
+      },
       debugging: logEnabled,
       language:  options.language || optionsDefaults.language,
     };
@@ -109,12 +113,12 @@ function handleSession(qr, options = {}) {
     }
 
     return irmaCore.start()
-    .then(result => {
-      if (result)
-        return result;
-      return SessionStatus.Done;
-    })
-    .catch(parseError);
+        .then(result => {
+          if (result)
+            return result;
+          return SessionStatus.Done;
+        })
+        .catch(parseError);
   })
 }
 
@@ -133,6 +137,7 @@ function startSession(server, request, method, key, name) {
     mapping: {
       sessionPtr: r => r, // In this way also the sessionToken is included in the return value.
       sessionToken: () => undefined,
+      frontendAuth: () => undefined,
     }
   };
 
@@ -168,8 +173,8 @@ function startSession(server, request, method, key, name) {
       throw new Error(`Method ${method} is not supported right now`);
   }
 
-  const serverSession = new ServerSession(options);
-  return serverSession.start();
+  const session = new SessionManagement(options);
+  return session.start().then(resp => resp.sessionPtr);
 }
 
 /**
@@ -209,7 +214,7 @@ function waitDone(url) {
 }
 
 function waitStatus(url, startingState, waitForStates) {
-  const serverState = new ServerState(url, {
+  const statusListener = new StatusListener(url, {
     serverSentEvents: {
       url:        o => `${o.url}/statusevents`,
       timeout:    2000,
@@ -222,13 +227,13 @@ function waitStatus(url, startingState, waitForStates) {
     }
   });
   return new Promise(
-    (resolve, reject) => {
-      serverState.observe((status) => {
-        if (waitForStates.includes(status))
-          return resolve(status);
-      }, reject);
-    }
-  ).finally(() => serverState.close());
+      (resolve, reject) => {
+        statusListener.observe((status) => {
+          if (waitForStates.includes(status))
+            return resolve(status);
+        }, reject);
+      }
+  ).finally(() => statusListener.close());
 }
 
 module.exports = {
