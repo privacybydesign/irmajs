@@ -137,7 +137,7 @@ function startSession(server, request, method, key, name) {
     mapping: {
       sessionPtr: r => r, // In this way also the sessionToken is included in the return value.
       sessionToken: () => undefined,
-      frontendAuth: () => undefined,
+      frontendRequest: () => undefined,
     }
   };
 
