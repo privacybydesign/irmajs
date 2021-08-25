@@ -141,40 +141,47 @@ function startSession(server, request, method, key, name) {
     }
   };
 
-  if (typeof(request) === 'object') {
-    if (['publickey', 'hmac'].includes(method)) {
-      request = signSessionRequest(request, method, key, name);
-    } else {
-      request = JSON.stringify(request);
-    }
-  }
+  return Promise.resolve()
+      .then(() => {
+        if (typeof (request) === 'object') {
+          if (['publickey', 'hmac'].includes(method)) {
+            return signSessionRequest(request, method, key, name);
+          } else {
+            return JSON.stringify(request);
+          }
+        } else {
+          return request;
+        }
+      })
+      .then((body) => {
+        options.start = {
+          url: o => `${o.url}/session`,
+          body: body,
+          method: 'POST',
+          headers: {},
+          parseResponse: r => r.json(),
+        };
 
-  options.start = {
-    url: o => `${o.url}/session`,
-    body: request,
-    method: 'POST',
-    headers: {},
-    parseResponse: r => r.json(),
-  };
+        switch(method) {
+          case 'token':
+            options.start.headers['Authorization'] = key;
+            // Fallthrough
+          case undefined:
+          case 'none':
+            options.start.headers['Content-Type'] = 'application/json';
+            break;
+          case 'publickey':
+          case 'hmac':
+            options.start.headers['Content-Type'] = 'text/plain';
+            break;
+          default:
+            throw new Error(`Method ${method} is not supported right now`);
+        }
 
-  switch(method) {
-    case 'token':
-      options.start.headers['Authorization'] = key;
-      // Fallthrough
-    case undefined:
-    case 'none':
-      options.start.headers['Content-Type'] = 'application/json';
-      break;
-    case 'publickey':
-    case 'hmac':
-      options.start.headers['Content-Type'] = 'text/plain';
-      break;
-    default:
-      throw new Error(`Method ${method} is not supported right now`);
-  }
-
-  const session = new SessionManagement(options);
-  return session.start().then(resp => resp.sessionPtr);
+        const session = new SessionManagement(options);
+        return session.start();
+      })
+      .then(resp => resp.sessionPtr);
 }
 
 /**
@@ -185,7 +192,8 @@ function startSession(server, request, method, key, name) {
  * @param {string} name name of the requestor, only for hmac and publickey mode
  */
 function signSessionRequest(request, method, key, name) {
-  return import(/* webpackChunkName: "jwt" */ '@privacybydesign/irma-jwt').then(IrmaJwt => {
+  return import(/* webpackChunkName: "jwt" */ '@privacybydesign/irma-jwt').then(m => {
+    const { default: IrmaJwt } = m;
     const irmaJwt = new IrmaJwt(method, {
       secretKey: key,
       iss: name,
